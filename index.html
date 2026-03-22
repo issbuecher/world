@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL // Global Intelligence Platform</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f7f8fa;
+  --bg-card: #ffffff;
+  --border: #e2e6ec;
+  --border-light: #edf0f4;
+  --text-primary: #1a1f2e;
+  --text-secondary: #4a5568;
+  --text-muted: #8494a7;
+  --accent-blue: #2563eb;
+  --accent-cyan: #0891b2;
+  --accent-red: #dc2626;
+  --accent-orange: #d97706;
+  --accent-green: #16a34a;
+  --accent-purple: #7c3aed;
+  --accent-pink: #db2777;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Top Bar */
+.top-bar {
+  height: 52px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+.logo-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: #fff;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 2px;
+  margin-left: 8px;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #4ade80;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background: #4ade80;
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px #4ade80; }
+  50% { opacity: 0.5; box-shadow: 0 0 10px #4ade80; }
+}
+
+.clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+}
+
+.defcon-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(239,68,68,0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+.main-container {
+  display: flex;
+  height: calc(100vh - 52px);
+}
+
+/* Left Sidebar */
+.sidebar {
+  width: 330px;
+  min-width: 330px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+}
+
+.sidebar::-webkit-scrollbar { width: 5px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border-light);
+  padding: 16px;
+}
+
+.sidebar-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Layer Controls */
+.layer-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+}
+
+.layer-control:hover { background: var(--bg-tertiary); }
+.layer-control.active { background: rgba(37, 99, 235, 0.06); }
+
+.layer-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.layer-info { flex: 1; min-width: 0; }
+
+.layer-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.layer-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.layer-toggle {
+  width: 38px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.layer-toggle.on { background: var(--accent-blue); }
+
+.layer-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.layer-toggle.on::after { transform: translateX(16px); }
+
+/* Stats Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 14px;
+  transition: box-shadow 0.2s;
+}
+
+.stat-card:hover { box-shadow: var(--shadow-sm); }
+
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.stat-card.danger .stat-value { color: var(--accent-red); }
+.stat-card.warning .stat-value { color: var(--accent-orange); }
+.stat-card.info .stat-value { color: var(--accent-cyan); }
+.stat-card.success .stat-value { color: var(--accent-green); }
+
+/* Map Container */
+.map-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background: #e8ecf0;
+}
+
+.leaflet-control-zoom { display: none; }
+
+/* Custom Markers */
+.leaflet-div-icon {
+  background: none !important;
+  border: none !important;
+}
+
+.custom-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.marker-conflict {
+  width: 26px;
+  height: 26px;
+  background: radial-gradient(circle, #ef4444, #b91c1c);
+  border: 3px solid rgba(239,68,68,0.4);
+  border-radius: 50%;
+  animation: pulse-conflict 2s infinite;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+}
+
+@keyframes pulse-conflict {
+  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+  70% { box-shadow: 0 0 0 18px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+
+.marker-base {
+  width: 18px;
+  height: 18px;
+  border: 2px solid white;
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.marker-base.us { background: #2563eb; }
+.marker-base.ru { background: #dc2626; }
+.marker-base.cn { background: #d97706; }
+.marker-base.nato { background: #0891b2; }
+.marker-base.ir { background: #065f46; }
+.marker-base.uk { background: #1d4ed8; }
+.marker-base.fr { background: #1e40af; }
+
+.marker-energy {
+  width: 16px;
+  height: 16px;
+  background: var(--accent-orange);
+  border: 2px solid white;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.marker-tanker {
+  width: 22px;
+  height: 10px;
+  background: var(--accent-cyan);
+  border: 2px solid white;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.marker-datacenter {
+  width: 14px;
+  height: 14px;
+  background: var(--accent-purple);
+  border: 2px solid white;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.marker-strait {
+  width: 30px;
+  height: 10px;
+  background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
+  border-radius: 5px;
+  cursor: pointer;
+  animation: strait-pulse 3s infinite;
+}
+
+@keyframes strait-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.marker-attack {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--accent-red);
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+}
+
+.marker-attack::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid var(--accent-red);
+  border-radius: 50%;
+  animation: attack-ring 1.5s infinite;
+}
+
+@keyframes attack-ring {
+  0% { opacity: 1; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+/* Popup Styling */
+.leaflet-popup-content-wrapper {
+  background: #fff !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-lg) !important;
+  color: var(--text-primary) !important;
+}
+
+.leaflet-popup-tip { background: #fff !important; }
+.leaflet-popup-close-button { color: var(--text-muted) !important; font-size: 18px !important; }
+
+.popup-content {
+  font-family: 'Inter', sans-serif;
+  min-width: 240px;
+}
+
+.popup-header {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+  font-weight: 700;
+}
+
+.popup-header.conflict { color: var(--accent-red); }
+.popup-header.base { color: var(--accent-blue); }
+.popup-header.energy { color: var(--accent-orange); }
+.popup-header.tanker { color: var(--accent-cyan); }
+.popup-header.datacenter { color: var(--accent-purple); }
+.popup-header.strait { color: var(--accent-pink); }
+.popup-header.attack { color: var(--accent-red); }
+
+.popup-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.popup-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.popup-detail-label { color: var(--text-muted); }
+.popup-detail-value { color: var(--text-primary); font-weight: 600; }
+.popup-detail-value.danger { color: var(--accent-red); }
+.popup-detail-value.warning { color: var(--accent-orange); }
+.popup-detail-value.safe { color: var(--accent-green); }
+
+.popup-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+.popup-section-title:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+.popup-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.leaflet-popup-content { max-height: 450px; overflow-y: auto; }
+.leaflet-popup-content::-webkit-scrollbar { width: 4px; }
+.leaflet-popup-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Right Panel */
+.right-panel {
+  width: 360px;
+  min-width: 360px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  overflow-y: auto;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.04);
+}
+
+.right-panel::-webkit-scrollbar { width: 5px; }
+.right-panel::-webkit-scrollbar-track { background: transparent; }
+.right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Threat Feed */
+.threat-item {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.threat-item:hover { background: var(--bg-tertiary); }
+
+.threat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.threat-severity {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.threat-severity.critical { background: var(--accent-red); box-shadow: 0 0 6px rgba(220,38,38,0.5); }
+.threat-severity.high { background: var(--accent-orange); box-shadow: 0 0 6px rgba(217,119,6,0.4); }
+.threat-severity.medium { background: var(--accent-cyan); }
+.threat-severity.low { background: var(--accent-green); }
+
+.threat-title {
+  font-size: 12px;
+  font-weight: 700;
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.threat-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.threat-description {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.threat-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.threat-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  font-weight: 500;
+}
+
+/* Bottom Bar */
+.bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 330px;
+  right: 360px;
+  height: 44px;
+  background: linear-gradient(0deg, rgba(240,242,245,0.95), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  z-index: 998;
+  padding: 0 20px;
+  backdrop-filter: blur(4px);
+}
+
+.bottom-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.bottom-stat span { color: var(--text-primary); font-weight: 600; }
+
+/* Search */
+.search-box {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-box:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.search-box::placeholder { color: var(--text-muted); }
+
+/* Classification Badge */
+.classification {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #dc2626;
+  text-align: center;
+  padding: 3px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+}
+
+/* Tab system */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-tertiary);
+}
+
+.tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.tab:hover { color: var(--text-secondary); background: rgba(0,0,0,0.02); }
+.tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: white; }
+
+@keyframes slide-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.threat-item.new { animation: slide-in 0.3s ease; }
+
+.leaflet-control-attribution { display: none !important; }
+
+/* Oil price ticker */
+.oil-ticker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #fca5a5;
+  background: rgba(239,68,68,0.15);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+.oil-ticker .price { font-weight: 700; color: #fecaca; }
+
+/* Conflict sidebar item */
+.conflict-sidebar-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.conflict-sidebar-item:hover { background: var(--bg-tertiary); }
+.conflict-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.conflict-dot.high { background: #dc2626; }
+.conflict-dot.medium { background: #d97706; }
+.conflict-dot.low { background: #0891b2; }
+.conflict-info { flex: 1; }
+.conflict-name { font-size: 12px; font-weight: 600; }
+.conflict-status { font-size: 10px; color: var(--text-muted); }
+
+/* War zone highlight */
+.war-banner {
+  background: linear-gradient(90deg, #fef2f2, #fff1f2, #fef2f2);
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.war-banner-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #dc2626;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.war-banner-text {
+  font-size: 11px;
+  color: #991b1b;
+  line-height: 1.4;
+}
+
+/* Pipeline markers */
+.marker-factory {
+  width: 16px;
+  height: 16px;
+  background: #059669;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.marker-pipeline-node {
+  width: 10px;
+  height: 10px;
+  background: #92400e;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+/* Air Defense marker */
+.marker-shield {
+  width: 16px;
+  height: 16px;
+  background: #16a34a;
+  border: 2px solid white;
+  clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.marker-shield.enemy { background: #dc2626; }
+.marker-shield.damaged { background: #d97706; }
+
+/* Aircraft marker */
+.marker-jet {
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 18px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+/* Naval marker */
+.marker-ship {
+  width: 20px;
+  height: 20px;
+  background: #1e3a5f;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+/* Cable landing marker */
+.marker-cable {
+  width: 8px;
+  height: 8px;
+  background: #7c3aed;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Nuke marker */
+.marker-nuke {
+  width: 16px;
+  height: 16px;
+  background: #eab308;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(234,179,8,0.4);
+}
+
+/* Satellite panel */
+.sat-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 320px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  z-index: 999;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: none;
+}
+.sat-panel.visible { display: block; }
+.sat-panel-header {
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sat-panel-close {
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.sat-panel iframe {
+  width: 100%;
+  height: 300px;
+  border: none;
+}
+
+/* Satellite toggle button */
+.sat-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  z-index: 998;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.sat-toggle:hover { box-shadow: var(--shadow-md); }
+
+/* Timeline / Replay Panel */
+.timeline-panel {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  z-index: 999;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  min-width: 600px;
+  max-width: 90%;
+}
+.timeline-panel.visible { display: block; }
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.timeline-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent-red);
+}
+.timeline-close {
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+}
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.timeline-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+.timeline-btn:hover { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+.timeline-btn.active { background: var(--accent-red); color: white; border-color: var(--accent-red); }
+.timeline-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+}
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.timeline-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+}
+.timeline-info {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.timeline-info strong { color: var(--text-primary); }
+
+/* Replay button on map */
+.replay-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  z-index: 998;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-red);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.replay-btn:hover { box-shadow: var(--shadow-md); background: #fef2f2; }
+
+/* Missile trajectory line animation */
+@keyframes missile-fly {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="classification">TOP SECRET // SI // NOFORN — SENTINEL INTELLIGENCE PLATFORM v4.2 — MARCH 2026</div>
+
+<div class="top-bar">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <span class="logo-text">SENTINEL</span>
+    <span class="logo-sub">GLOBAL INTELLIGENCE</span>
+  </div>
+  <div class="top-bar-right">
+    <div class="oil-ticker">BRENT <span class="price">$112.19</span> ▲ +8.4%</div>
+    <div class="defcon-badge">THREAT: SEVERE</div>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span>LIVE</span>
+    </div>
+    <div class="clock" id="clock"></div>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <input type="text" class="search-box" placeholder="Search locations, assets, incidents...">
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Global Overview</div>
+      <div class="war-banner">
+        <div class="war-banner-title">IRAN WAR — DAY 22</div>
+        <div class="war-banner-text">US-Israel strikes on Iran since Feb 28. Strait of Hormuz partially blocked. Brent at $112. IEA released 400M barrels from strategic reserves.</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card danger">
+          <div class="stat-value">46</div>
+          <div class="stat-label">Active Conflicts</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-value">$112</div>
+          <div class="stat-label">Brent Crude $/bbl</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-value">21</div>
+          <div class="stat-label">Tankers via Hormuz</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-value">750+</div>
+          <div class="stat-label">US Bases Overseas</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Intelligence Layers</div>
+
+      <div class="layer-control active" data-layer="conflicts">
+        <div class="layer-icon" style="background: #fef2f2; color: #dc2626;">⚔</div>
+        <div class="layer-info">
+          <div class="layer-name">Active Conflicts</div>
+          <div class="layer-count">14 major zones</div>
+        </div>
+        <div class="layer-toggle on" data-layer="conflicts"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="attacks">
+        <div class="layer-icon" style="background: #fef2f2; color: #dc2626;">💥</div>
+        <div class="layer-info">
+          <div class="layer-name">Active Strikes</div>
+          <div class="layer-count">18 ongoing</div>
+        </div>
+        <div class="layer-toggle on" data-layer="attacks"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="bases">
+        <div class="layer-icon" style="background: #eff6ff; color: #2563eb;">⬠</div>
+        <div class="layer-info">
+          <div class="layer-name">Military Bases</div>
+          <div class="layer-count">750+ installations</div>
+        </div>
+        <div class="layer-toggle on" data-layer="bases"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="tankers">
+        <div class="layer-icon" style="background: #ecfeff; color: #0891b2;">🚢</div>
+        <div class="layer-info">
+          <div class="layer-name">Oil/LNG Tankers</div>
+          <div class="layer-count">Key vessels tracked</div>
+        </div>
+        <div class="layer-toggle on" data-layer="tankers"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="energy">
+        <div class="layer-icon" style="background: #fffbeb; color: #d97706;">⛽</div>
+        <div class="layer-info">
+          <div class="layer-name">Energy Infrastructure</div>
+          <div class="layer-count">Oil fields, SPR, refineries</div>
+        </div>
+        <div class="layer-toggle on" data-layer="energy"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="datacenters">
+        <div class="layer-icon" style="background: #f5f3ff; color: #7c3aed;">🖥</div>
+        <div class="layer-info">
+          <div class="layer-name">Data Centers</div>
+          <div class="layer-count">11,038 globally</div>
+        </div>
+        <div class="layer-toggle on" data-layer="datacenters"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="straits">
+        <div class="layer-icon" style="background: #fdf2f8; color: #db2777;">🌊</div>
+        <div class="layer-info">
+          <div class="layer-name">Strategic Chokepoints</div>
+          <div class="layer-count">70% oil transits</div>
+        </div>
+        <div class="layer-toggle on" data-layer="straits"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="pipelines">
+        <div class="layer-icon" style="background: #fef3c7; color: #92400e;">🛢</div>
+        <div class="layer-info">
+          <div class="layer-name">Oil & Gas Pipelines</div>
+          <div class="layer-count">12 major pipelines</div>
+        </div>
+        <div class="layer-toggle on" data-layer="pipelines"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="factories">
+        <div class="layer-icon" style="background: #ecfdf5; color: #059669;">🏭</div>
+        <div class="layer-info">
+          <div class="layer-name">Tesla Gigafactories</div>
+          <div class="layer-count">6 active + 1 planned</div>
+        </div>
+        <div class="layer-toggle on" data-layer="factories"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="airdefense">
+        <div class="layer-icon" style="background: #fef2f2; color: #b91c1c;">🛡</div>
+        <div class="layer-info">
+          <div class="layer-name">Air Defense Systems</div>
+          <div class="layer-count">Patriot, THAAD, S-300, Iron Dome</div>
+        </div>
+        <div class="layer-toggle on" data-layer="airdefense"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="aircraft">
+        <div class="layer-icon" style="background: #eff6ff; color: #1e40af;">✈</div>
+        <div class="layer-info">
+          <div class="layer-name">Aircraft Deployments</div>
+          <div class="layer-count">F-22, F-35, B-2, Su-35</div>
+        </div>
+        <div class="layer-toggle on" data-layer="aircraft"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="naval">
+        <div class="layer-icon" style="background: #ecfeff; color: #155e75;">⚓</div>
+        <div class="layer-info">
+          <div class="layer-name">Naval Fleets</div>
+          <div class="layer-count">CSGs, Subs, IRGC Navy</div>
+        </div>
+        <div class="layer-toggle on" data-layer="naval"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="cables">
+        <div class="layer-icon" style="background: #f5f3ff; color: #6d28d9;">🔌</div>
+        <div class="layer-info">
+          <div class="layer-name">Undersea Cables</div>
+          <div class="layer-count">97% of global internet</div>
+        </div>
+        <div class="layer-toggle on" data-layer="cables"></div>
+      </div>
+
+      <div class="layer-control active" data-layer="nukes">
+        <div class="layer-icon" style="background: #fef9c3; color: #a16207;">☢</div>
+        <div class="layer-info">
+          <div class="layer-name">Nuclear Arsenal Sites</div>
+          <div class="layer-count">12,100 warheads globally</div>
+        </div>
+        <div class="layer-toggle on" data-layer="nukes"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Major Conflicts</div>
+      <div id="conflict-list"></div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="replay-btn" onclick="toggleTimeline()">⏪ STRIKE REPLAY</div>
+    <div class="sat-toggle" id="satToggle" onclick="toggleSatPanel()">🛰 SATELLITE TRACKER</div>
+    <div class="timeline-panel" id="timelinePanel">
+      <div class="timeline-header">
+        <span class="timeline-title">STRIKE TIMELINE — IRAN WAR & GLOBAL CONFLICTS</span>
+        <button class="timeline-close" onclick="toggleTimeline()">✕</button>
+      </div>
+      <div class="timeline-controls">
+        <button class="timeline-btn" id="playBtn" onclick="playTimeline()">▶ PLAY</button>
+        <button class="timeline-btn" onclick="resetTimeline()">⏮ RESET</button>
+        <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="21" value="0" oninput="seekTimeline(this.value)">
+        <span class="timeline-date" id="timelineDate">Feb 28</span>
+      </div>
+      <div class="timeline-info" id="timelineInfo">Drücke ▶ PLAY um die Angriffe seit dem 28. Februar 2026 zurückzuspulen. Raketenflugbahnen, Startpositionen und Einschlagsorte werden animiert dargestellt.</div>
+    </div>
+    <div class="sat-panel" id="satPanel">
+      <div class="sat-panel-header">
+        <span>N2YO.COM — LIVE SATELLITE TRACKING</span>
+        <span class="sat-panel-close" onclick="toggleSatPanel()">✕</span>
+      </div>
+      <iframe src="https://www.n2yo.com/widgets/widget-tracker.php?s=25544&size=300&dc=1" title="N2YO Satellite Tracker"></iframe>
+      <div style="padding:8px 12px;font-size:10px;color:var(--text-muted);border-top:1px solid var(--border)">
+        Tracking: ISS (ZARYA) — NORAD ID 25544 | Click for more satellites at <a href="https://n2yo.com" target="_blank" style="color:var(--accent-blue)">n2yo.com</a>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div class="bottom-stat">HORMUZ: <span style="color:var(--accent-red);">RESTRICTED</span></div>
+      <div class="bottom-stat">AIS TRACKS: <span>12,847</span></div>
+      <div class="bottom-stat">IEA SPR RELEASE: <span>400M bbl</span></div>
+      <div class="bottom-stat">CONFLICTS: <span style="color:var(--accent-red);">46 ACTIVE</span></div>
+      <div class="bottom-stat">DEFCON: <span style="color:var(--accent-orange);">3</span></div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="tab-bar">
+      <div class="tab active" data-tab="threats">LIVE FEED</div>
+      <div class="tab" data-tab="intel">INTEL</div>
+      <div class="tab" data-tab="assets">ASSETS</div>
+    </div>
+    <div id="threat-feed"></div>
+  </div>
+</div>
+
+<script>
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Map
+const map = L.map('map', {
+  center: [28, 50],
+  zoom: 4,
+  zoomControl: false,
+  attributionControl: false,
+  maxBounds: [[-85, -180], [85, 180]],
+  minZoom: 2,
+  maxZoom: 12
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  subdomains: 'abcd'
+}).addTo(map);
+
+// === REAL DATA — March 2026 ===
+
+const conflicts = [
+  { name: "Iran War (US/Israel vs Iran)", lat: 32.4, lng: 53.7, status: "High Intensity", casualties: "5,300+ military, 2,300+ total region", since: "Feb 28, 2026", parties: "US, Israel vs Iran, Axis of Resistance", description: "Joint US-Israel strikes destroyed Iranian military/nuclear infrastructure. Khamenei killed Feb 28. Iran retaliating with missiles on Israel, Gulf states. Strait of Hormuz partially blocked. Brent at $112." },
+  { name: "Ukraine - Russia War", lat: 48.5, lng: 37.5, status: "High Intensity", casualties: "500,000+", since: "Feb 2022", parties: "Ukraine vs Russia", description: "4th year of largest conventional war in Europe since WWII. War of attrition along 1,000km frontline. Continued drone/missile exchanges." },
+  { name: "Israel - Gaza / Palestine", lat: 31.4, lng: 34.4, status: "High Intensity", casualties: "45,000+", since: "Oct 2023", parties: "Israel vs Hamas / Palestinian factions", description: "Ongoing urban warfare in Gaza. Humanitarian crisis. Now part of broader regional conflict with Iran." },
+  { name: "Sudan Civil War", lat: 15.5, lng: 32.5, status: "High Intensity", casualties: "20,000+ killed, 8M displaced", since: "Apr 2023", parties: "SAF vs RSF", description: "One of world's deadliest conflicts. Humanitarian collapse. Risk of spillover into Chad, Egypt. ACLED estimates 20,373 killed Aug 2024-Aug 2025." },
+  { name: "Myanmar Civil War", lat: 19.8, lng: 96.0, status: "High Intensity", casualties: "50,000+", since: "Feb 2021", parties: "Military Junta vs NUG/EAOs", description: "Multi-front resistance against military junta. Junta conducting airstrikes on civilian areas. Resistance making territorial gains." },
+  { name: "Yemen — Houthi Conflict", lat: 15.4, lng: 44.2, status: "High Intensity", casualties: "150,000+", since: "2014", parties: "Houthis vs Coalition / US Navy", description: "Houthis attacking shipping in Red Sea and Gulf of Aden. Anti-ship missiles targeting commercial vessels. Now part of broader Iran-axis conflict." },
+  { name: "DR Congo — M23 / Rwanda", lat: -1.5, lng: 29.0, status: "High Intensity", casualties: "15,000+", since: "2022", parties: "DRC vs M23 (backed by Rwanda)", description: "Eastern Congo insurgency. Rwanda-backed M23 rebels seized key areas. Diplomatic crisis between DRC and Rwanda." },
+  { name: "Syria — Multi-faction", lat: 35.0, lng: 38.5, status: "Medium Intensity", casualties: "500,000+ total", since: "2011", parties: "Multiple factions, ISIS remnants, Turkey", description: "Fragmented conflict zones. Turkish operations in north. ISIS remnants. Russian/Iranian bases now targeted in broader Iran war." },
+  { name: "Somalia — Al-Shabaab", lat: 2.0, lng: 45.3, status: "Medium Intensity", casualties: "20,000+", since: "2006", parties: "SNA/ATMIS vs Al-Shabaab", description: "Ongoing insurgency in southern Somalia. Al-Shabaab conducting IED attacks, assassinations." },
+  { name: "Haiti — Gang Violence", lat: 18.5, lng: -72.3, status: "Medium Intensity", casualties: "10,000+", since: "2023", parties: "Armed gangs vs security forces", description: "Gang-controlled territory in Port-au-Prince. State collapse. UN-backed multinational security mission." },
+  { name: "Lebanon — Hezbollah/Israel", lat: 33.9, lng: 35.5, status: "High Intensity", casualties: "5,000+", since: "Oct 2023", parties: "Israel vs Hezbollah", description: "Part of broader Iran-axis war. Israeli strikes on Hezbollah positions. Hezbollah rocket attacks on northern Israel intensified after Feb 28." },
+  { name: "Iraq — Iran-linked militias", lat: 33.3, lng: 44.4, status: "Medium Intensity", casualties: "Ongoing", since: "2024", parties: "US forces vs Iran-backed militias", description: "Iran-aligned PMF groups attacking US bases in Iraq. Escalated significantly since Iran war began Feb 28." },
+  { name: "Sahel — Jihadist Insurgency", lat: 14.0, lng: -1.5, status: "Medium Intensity", casualties: "25,000+", since: "2012", parties: "JNIM/ISGS vs Mali/Burkina Faso/Niger", description: "Spreading jihadist insurgency across Sahel region. Military juntas in power. Wagner/Africa Corps presence." },
+  { name: "Colombia — Armed Groups", lat: 4.5, lng: -74.0, status: "Low Intensity", casualties: "Ongoing", since: "Decades", parties: "ELN, FARC dissidents, cartels", description: "Continued violence from armed groups despite peace process. Drug trafficking related conflict." },
+];
+
+const attacks = [
+  { name: "US Strike — Natanz Nuclear Facility", lat: 33.72, lng: 51.73, type: "Bunker Busters / Air Strike", by: "US/Israel", time: "Day 22 — ongoing" },
+  { name: "Iranian Missiles — Dimona, Israel", lat: 31.0, lng: 35.2, type: "Ballistic Missiles", by: "Iran IRGC", time: "Mar 22" },
+  { name: "US Strike — Kharg Island Oil Terminal", lat: 29.23, lng: 50.32, type: "Air/Cruise Missile", by: "US", time: "Mar 21" },
+  { name: "Iranian Drones — Duqm Port, Oman", lat: 19.67, lng: 57.70, type: "Drone Swarm", by: "Iran", time: "Mar 20" },
+  { name: "Houthi Anti-Ship — Red Sea", lat: 13.5, lng: 42.8, type: "Anti-Ship Missile", by: "Houthis", time: "Mar 21" },
+  { name: "Iranian Missiles — Al Udeid AB, Qatar", lat: 25.12, lng: 51.32, type: "Ballistic Missiles", by: "Iran", time: "Mar 19" },
+  { name: "Israel Strike — Tehran IRGC HQ", lat: 35.69, lng: 51.39, type: "Air Strike", by: "Israel", time: "Mar 18" },
+  { name: "Iranian Attack — UAE Gas Field", lat: 25.5, lng: 54.5, type: "Cruise Missile", by: "Iran", time: "Mar 17" },
+  { name: "Russian Glide Bomb — Kharkiv", lat: 49.99, lng: 36.23, type: "KAB Glide Bomb", by: "Russia", time: "Mar 22" },
+  { name: "Ukrainian Drone — Belgorod", lat: 50.6, lng: 36.6, type: "UAV Strike", by: "Ukraine", time: "Mar 22" },
+  { name: "Ukraine Strike — Crimea Bridge area", lat: 45.3, lng: 36.5, type: "Storm Shadow/SCALP", by: "Ukraine", time: "Mar 21" },
+  { name: "RSF Shelling — Khartoum", lat: 15.6, lng: 32.55, type: "Artillery", by: "RSF", time: "Mar 22" },
+  { name: "Myanmar Junta Airstrike — Mandalay", lat: 21.9, lng: 96.1, type: "Air Strike", by: "Tatmadaw", time: "Mar 21" },
+  { name: "Israeli Strike — South Lebanon", lat: 33.27, lng: 35.2, type: "Air Strike", by: "IDF", time: "Mar 22" },
+  { name: "Hezbollah Rockets — Haifa", lat: 32.8, lng: 35.0, type: "Rockets/Missiles", by: "Hezbollah", time: "Mar 22" },
+  { name: "PMF Drone — Ain al-Asad, Iraq", lat: 33.8, lng: 42.45, type: "UAV", by: "Iran-backed PMF", time: "Mar 21" },
+  { name: "Houthi Drone — Salalah, Oman", lat: 17.02, lng: 54.09, type: "UAV", by: "Houthis", time: "Mar 20" },
+  { name: "Al-Shabaab IED — Mogadishu", lat: 2.05, lng: 45.35, type: "IED / VBIED", by: "Al-Shabaab", time: "Mar 20" },
+];
+
+const militaryBases = [
+  // US Major Overseas Bases (750+ total, showing key ones)
+  { name: "Ramstein Air Base", lat: 49.44, lng: 7.60, country: "US", type: "USAFE HQ", personnel: "9,200", cls: "us" },
+  { name: "Camp Humphreys (Largest Overseas)", lat: 36.96, lng: 127.03, country: "US", type: "USFK HQ", personnel: "36,000", cls: "us" },
+  { name: "Yokota Air Base", lat: 35.75, lng: 139.35, country: "US", type: "USFJ HQ", personnel: "14,000", cls: "us" },
+  { name: "Kadena Air Base, Okinawa", lat: 26.35, lng: 127.77, country: "US", type: "Air Force", personnel: "18,000", cls: "us" },
+  { name: "Naval Station Norfolk", lat: 36.95, lng: -76.33, country: "US", type: "Navy (Largest Naval Base)", personnel: "70,000", cls: "us" },
+  { name: "Diego Garcia", lat: -7.32, lng: 72.42, country: "US", type: "Navy/Air Force", personnel: "4,000", cls: "us" },
+  { name: "Al Udeid Air Base, Qatar", lat: 25.12, lng: 51.32, country: "US", type: "CENTCOM Forward", personnel: "11,000", cls: "us" },
+  { name: "Camp Lemonnier, Djibouti", lat: 11.55, lng: 43.15, country: "US", type: "AFRICOM / SOCOM", personnel: "4,000", cls: "us" },
+  { name: "Incirlik Air Base, Turkey", lat: 37.0, lng: 35.43, country: "US", type: "Air Force", personnel: "5,000", cls: "us" },
+  { name: "Naval Station Rota, Spain", lat: 36.63, lng: -6.35, country: "US", type: "Navy / BMD", personnel: "4,200", cls: "us" },
+  { name: "Thule (Pituffik) Space Base", lat: 76.53, lng: -68.70, country: "US", type: "Space Force", personnel: "600", cls: "us" },
+  { name: "Fort Liberty (Bragg)", lat: 35.14, lng: -79.0, country: "US", type: "XVIII ABC / USASOC", personnel: "57,000", cls: "us" },
+  { name: "Pearl Harbor-Hickam", lat: 21.35, lng: -157.97, country: "US", type: "INDOPACOM HQ", personnel: "18,000", cls: "us" },
+  { name: "Naval Base Guam", lat: 13.45, lng: 144.79, country: "US", type: "Navy/Air Force", personnel: "7,000", cls: "us" },
+  { name: "NSA Bahrain (5th Fleet)", lat: 26.19, lng: 50.60, country: "US", type: "NAVCENT / 5th Fleet", personnel: "8,000", cls: "us" },
+  { name: "Osan Air Base, S. Korea", lat: 37.09, lng: 127.03, country: "US", type: "Air Force", personnel: "7,800", cls: "us" },
+  { name: "Grafenwöhr, Germany", lat: 49.69, lng: 11.94, country: "US", type: "Army Training", personnel: "12,000", cls: "us" },
+  { name: "Aviano Air Base, Italy", lat: 46.03, lng: 12.60, country: "US", type: "Air Force", personnel: "4,800", cls: "us" },
+  { name: "Sigonella NAS, Sicily", lat: 37.40, lng: 14.92, country: "US", type: "Navy / ISR", personnel: "5,500", cls: "us" },
+  { name: "Ain al-Asad, Iraq", lat: 33.8, lng: 42.45, country: "US", type: "Air Base", personnel: "2,500", cls: "us" },
+  { name: "RAF Lakenheath, UK", lat: 52.41, lng: 0.56, country: "US", type: "Air Force (F-35s)", personnel: "5,000", cls: "us" },
+  { name: "Misawa Air Base, Japan", lat: 40.70, lng: 141.37, country: "US", type: "Air Force", personnel: "5,200", cls: "us" },
+  { name: "Subic/EDCA Philippines", lat: 14.80, lng: 120.27, country: "US", type: "EDCA Rotational", personnel: "Rotational", cls: "us" },
+  { name: "Camp Bondsteel, Kosovo", lat: 42.37, lng: 21.25, country: "US", type: "Army (KFOR)", personnel: "7,000", cls: "us" },
+  { name: "USS Eisenhower CSG (deployed)", lat: 22.0, lng: 60.0, country: "US", type: "Carrier Strike Group", personnel: "7,500", cls: "us" },
+
+  // Russian Bases
+  { name: "Sevastopol Naval Base, Crimea", lat: 44.62, lng: 33.52, country: "RU", type: "Black Sea Fleet", personnel: "25,000", cls: "ru" },
+  { name: "Hmeimim Air Base, Syria", lat: 35.41, lng: 35.95, country: "RU", type: "VKS Air Base", personnel: "4,000", cls: "ru" },
+  { name: "Tartus Naval Facility, Syria", lat: 34.89, lng: 35.89, country: "RU", type: "Navy Logistics", personnel: "1,700", cls: "ru" },
+  { name: "Kaliningrad Garrison", lat: 54.71, lng: 20.51, country: "RU", type: "Army/Navy/Air", personnel: "18,000", cls: "ru" },
+  { name: "Vladivostok (Pacific Fleet)", lat: 43.12, lng: 131.90, country: "RU", type: "Pacific Fleet HQ", personnel: "30,000", cls: "ru" },
+  { name: "Severomorsk (Northern Fleet)", lat: 69.07, lng: 33.42, country: "RU", type: "Northern Fleet HQ", personnel: "35,000", cls: "ru" },
+  { name: "201st Base, Tajikistan", lat: 38.56, lng: 68.77, country: "RU", type: "Army (largest overseas)", personnel: "7,000", cls: "ru" },
+  { name: "Kant Air Base, Kyrgyzstan", lat: 42.85, lng: 74.85, country: "RU", type: "Air Force", personnel: "500", cls: "ru" },
+  { name: "102nd Base, Gyumri, Armenia", lat: 40.79, lng: 43.85, country: "RU", type: "Army", personnel: "3,300", cls: "ru" },
+
+  // Chinese Bases
+  { name: "PLA Support Base, Djibouti", lat: 11.59, lng: 43.15, country: "CN", type: "PLA Navy Logistics", personnel: "2,000", cls: "cn" },
+  { name: "Fiery Cross Reef (SCS)", lat: 9.55, lng: 112.89, country: "CN", type: "Air/Naval (Artificial Island)", personnel: "200+", cls: "cn" },
+  { name: "Subi Reef (SCS)", lat: 10.92, lng: 114.08, country: "CN", type: "Air/Naval (Artificial Island)", personnel: "200+", cls: "cn" },
+  { name: "Mischief Reef (SCS)", lat: 9.90, lng: 115.53, country: "CN", type: "Air/Naval (Artificial Island)", personnel: "200+", cls: "cn" },
+  { name: "Yulin Naval Base, Hainan", lat: 18.22, lng: 109.55, country: "CN", type: "SSBN / Submarine Base", personnel: "8,000", cls: "cn" },
+  { name: "Ream Naval Base, Cambodia", lat: 10.52, lng: 103.57, country: "CN", type: "Navy (suspected)", personnel: "Unknown", cls: "cn" },
+
+  // NATO eFP
+  { name: "Tapa Base, Estonia (NATO eFP)", lat: 59.26, lng: 25.97, country: "NATO", type: "UK-led Battlegroup", personnel: "1,200", cls: "nato" },
+  { name: "Ādaži, Latvia (NATO eFP)", lat: 57.08, lng: 24.35, country: "NATO", type: "CA-led Battlegroup", personnel: "1,500", cls: "nato" },
+  { name: "Rukla, Lithuania (NATO eFP)", lat: 55.08, lng: 24.06, country: "NATO", type: "DE-led Battlegroup", personnel: "1,600", cls: "nato" },
+  { name: "NATO HQ SHAPE, Belgium", lat: 50.50, lng: 3.97, country: "NATO", type: "SACEUR HQ", personnel: "4,000", cls: "nato" },
+  { name: "Rzeszów-Jasionka, Poland", lat: 50.11, lng: 22.02, country: "NATO", type: "Logistics Hub (Ukraine)", personnel: "10,000+", cls: "nato" },
+];
+
+const oilTankers = [
+  // Real situation: Only 21 tankers transited Hormuz since Feb 28 war started
+  { name: "VLCC Front Alta", lat: 26.2, lng: 56.5, flag: "Marshall Islands", dwt: "300,000", cargo: "Crude Oil", dest: "Rerouted — Cape of Good Hope", speed: "Anchored", note: "Waiting outside Hormuz" },
+  { name: "Suezmax Ridgebury Pride", lat: 24.5, lng: 58.0, flag: "Liberia", dwt: "160,000", cargo: "Crude Oil", dest: "Held — awaiting clearance", speed: "0 kn", note: "Stranded in Gulf of Oman" },
+  { name: "VLCC Eagle Vancouver", lat: 12.8, lng: 43.5, flag: "Marshall Islands", dwt: "300,000", cargo: "Crude Oil", dest: "Rotterdam via Cape", speed: "12.4 kn", note: "Rerouted around Africa" },
+  { name: "LNG Carrier Arctic Lady", lat: 70.0, lng: 40.0, flag: "Norway", dwt: "85,000", cargo: "LNG (Yamal)", dest: "Zeebrugge", speed: "19.5 kn", note: "Northern Sea Route" },
+  { name: "Shadow Fleet VLCC (Dark AIS)", lat: 36.5, lng: 28.0, flag: "Cameroon", dwt: "280,000", cargo: "Russian Sanctioned Crude", dest: "Unknown — AIS off", speed: "Unknown", note: "STS transfer suspected near Greece" },
+  { name: "Aframax Nordic Breeze", lat: 58.0, lng: 5.0, flag: "Norway", dwt: "105,000", cargo: "North Sea Brent Crude", dest: "Wilhelmshaven", speed: "14.5 kn", note: "Normal operations" },
+  { name: "VLCC Xin Run Yang", lat: 1.2, lng: 104.0, flag: "China (COSCO)", dwt: "320,000", cargo: "Iranian Crude (sanction-exempt)", dest: "Qingdao", speed: "11.2 kn", note: "China continues Iran imports" },
+  { name: "Suezmax Gener8 Athena", lat: 5.5, lng: -1.5, flag: "Greece", dwt: "150,000", cargo: "WAF Crude", dest: "Philadelphia", speed: "13.8 kn", note: "West Africa route" },
+  { name: "LNG Carrier Al Hamla", lat: 25.5, lng: 55.0, flag: "Qatar", dwt: "75,000", cargo: "LNG", dest: "Stranded — Hormuz blocked", speed: "0 kn", note: "Cannot exit Persian Gulf" },
+  { name: "Shadow Fleet VLCC #2", lat: 25.0, lng: 62.0, flag: "Gabon", dwt: "290,000", cargo: "Sanctioned Crude", dest: "Dalian via Indian Ocean", speed: "9.0 kn", note: "Russian oil to China route" },
+  { name: "Suezmax Stena Supreme", lat: 33.0, lng: -8.0, flag: "Sweden", dwt: "150,000", cargo: "Crude Oil", dest: "Barcelona", speed: "13.0 kn", note: "Mediterranean route" },
+  { name: "Cape Route Diversion — VLCC Maran Sagitta", lat: -34.0, lng: 20.0, flag: "Greece", dwt: "310,000", cargo: "Middle East Crude", dest: "Rotterdam via Cape", speed: "12.8 kn", note: "Suez/Hormuz diversion" },
+];
+
+const energyFacilities = [
+  // Saudi Arabia
+  { name: "Ghawar Oil Field (World's Largest)", lat: 25.4, lng: 49.1, country: "Saudi Arabia", type: "Oil Field", capacity: "3.8M bbl/day", reserves: "~75B barrels", status: "Operational" },
+  { name: "Abqaiq Processing (Critical)", lat: 25.94, lng: 49.68, country: "Saudi Arabia", type: "Processing Plant", capacity: "7M bbl/day throughput", reserves: "World's largest stabilization", status: "High Alert — Iran threat" },
+  { name: "Ras Tanura Refinery & Terminal", lat: 26.64, lng: 50.16, country: "Saudi Arabia", type: "Refinery / Export Terminal", capacity: "550K bbl/day", reserves: "N/A", status: "High Alert" },
+  { name: "Khurais Oil Field", lat: 25.1, lng: 48.2, country: "Saudi Arabia", type: "Oil Field", capacity: "1.5M bbl/day", reserves: "20B barrels", status: "Operational" },
+  { name: "Safaniya Offshore (Largest Offshore)", lat: 28.2, lng: 48.8, country: "Saudi Arabia", type: "Offshore Oil Field", capacity: "1.5M bbl/day", reserves: "37B barrels", status: "Operational" },
+  // Iran (under attack)
+  { name: "Kharg Island Oil Terminal (STRUCK)", lat: 29.23, lng: 50.32, country: "Iran", type: "Oil Export Terminal", capacity: "Was 5M bbl/day (90% exports)", reserves: "Critical export hub", status: "DAMAGED — US strikes" },
+  { name: "Natanz Nuclear Facility (STRUCK)", lat: 33.72, lng: 51.73, country: "Iran", type: "Nuclear Enrichment", capacity: "Centrifuge facility", reserves: "Nuclear program", status: "DESTROYED — US/Israel" },
+  // Kuwait / Iraq
+  { name: "Burgan Oil Field (2nd Largest)", lat: 28.9, lng: 47.9, country: "Kuwait", type: "Oil Field", capacity: "1.7M bbl/day", reserves: "66B barrels", status: "On Alert — Iran proximity" },
+  { name: "Rumaila Oil Field", lat: 30.5, lng: 47.3, country: "Iraq", type: "Oil Field", capacity: "1.4M bbl/day", reserves: "17B barrels", status: "Operational" },
+  // UAE (attacked by Iran)
+  { name: "UAE Fujairah/Gas Field (STRUCK)", lat: 25.13, lng: 56.33, country: "UAE", type: "Gas Field / Storage", capacity: "Major storage hub", reserves: "42M bbl capacity", status: "DAMAGED — Iranian strike Mar 17" },
+  // US SPR
+  { name: "Bryan Mound SPR, Texas", lat: 29.05, lng: -95.65, country: "USA", type: "Strategic Petroleum Reserve", capacity: "226M bbl capacity", reserves: "~100M bbl stored", status: "IEA release in progress" },
+  { name: "Big Hill SPR, Texas", lat: 29.68, lng: -94.37, country: "USA", type: "Strategic Petroleum Reserve", capacity: "160M bbl capacity", reserves: "~80M bbl stored", status: "IEA release in progress" },
+  { name: "West Hackberry SPR, Louisiana", lat: 30.05, lng: -93.32, country: "USA", type: "Strategic Petroleum Reserve", capacity: "220M bbl capacity", reserves: "~120M bbl stored", status: "IEA release in progress" },
+  { name: "Cushing, Oklahoma (Pipeline Hub)", lat: 35.98, lng: -96.77, country: "USA", type: "Oil Storage / Pipeline Hub", capacity: "76M bbl storage", reserves: "WTI pricing point", status: "Operational" },
+  // Russia
+  { name: "Samotlor Oil Field", lat: 61.18, lng: 76.68, country: "Russia", type: "Oil Field", capacity: "400K bbl/day", reserves: "28B barrels", status: "Declining" },
+  { name: "Yamal LNG Terminal", lat: 71.25, lng: 72.90, country: "Russia", type: "LNG Export", capacity: "16.5 MTPA", reserves: "Novatek", status: "Operational" },
+  // Kazakhstan
+  { name: "Tengiz Oil Field", lat: 46.15, lng: 53.35, country: "Kazakhstan", type: "Oil Field", capacity: "600K bbl/day", reserves: "25B barrels", status: "Operational" },
+  { name: "Kashagan Offshore", lat: 46.35, lng: 51.80, country: "Kazakhstan", type: "Offshore Oil", capacity: "400K bbl/day", reserves: "38B barrels", status: "Ramp-up" },
+  // Europe
+  { name: "Rotterdam Europoort Refinery Complex", lat: 51.95, lng: 4.13, country: "Netherlands", type: "Refinery Complex", capacity: "1.2M bbl/day", reserves: "EU Strategic Stock Hub", status: "Maximum throughput" },
+  // Alaska
+  { name: "Prudhoe Bay Oil Field", lat: 70.25, lng: -148.33, country: "USA", type: "Oil Field", capacity: "300K bbl/day", reserves: "25B barrels original", status: "Declining" },
+];
+
+const dataCenters = [
+  { name: "AWS US-East-1 (N. Virginia)", lat: 39.04, lng: -77.49, operator: "Amazon AWS", capacity: "300+ MW", type: "World's largest cloud region", region: "Ashburn, Virginia" },
+  { name: "Stargate I (xAI/Oracle)", lat: 32.45, lng: -99.73, operator: "Oracle / xAI", capacity: "1.2 GW (!)", type: "AI Hyperscale — 450K+ GB200 GPUs", region: "Abilene, Texas" },
+  { name: "Google Council Bluffs", lat: 41.26, lng: -95.86, operator: "Google", capacity: "400+ MW", type: "Hyperscale Cloud", region: "Iowa" },
+  { name: "Microsoft Quincy", lat: 47.23, lng: -119.85, operator: "Microsoft Azure", capacity: "350 MW", type: "Azure Region", region: "Washington State" },
+  { name: "Meta Prometheus (under construction)", lat: 39.97, lng: -82.80, operator: "Meta", capacity: "1 GW planned", type: "First Gigawatt DC", region: "New Albany, Ohio" },
+  { name: "Microsoft Dublin", lat: 53.35, lng: -6.26, operator: "Microsoft Azure", capacity: "200+ MW", type: "Azure EU Region", region: "Ireland" },
+  { name: "Equinix Frankfurt FR5", lat: 50.12, lng: 8.68, operator: "Equinix", capacity: "120 MW", type: "Colocation Hub", region: "Frankfurt, Germany" },
+  { name: "AWS Singapore", lat: 1.35, lng: 103.82, operator: "Amazon AWS", capacity: "150 MW", type: "APAC Cloud Region", region: "Singapore" },
+  { name: "Google Changhua, Taiwan", lat: 23.75, lng: 120.95, operator: "Google", capacity: "200 MW", type: "Hyperscale Cloud", region: "Changhua County" },
+  { name: "TSMC Fab Operations Hub", lat: 24.77, lng: 121.0, operator: "TSMC", capacity: "50 MW", type: "Semiconductor Ops", region: "Hsinchu, Taiwan" },
+  { name: "Alibaba Zhangbei", lat: 41.15, lng: 114.70, operator: "Alibaba Cloud", capacity: "300 MW", type: "Hyperscale Cloud", region: "Hebei, China" },
+  { name: "Meta Luleå", lat: 65.58, lng: 22.15, operator: "Meta", capacity: "120 MW", type: "Hyperscale (Arctic cooling)", region: "Luleå, Sweden" },
+  { name: "NTT Tokyo Otemachi", lat: 35.68, lng: 139.76, operator: "NTT", capacity: "80 MW", type: "Colocation", region: "Tokyo, Japan" },
+  { name: "Oracle Abu Dhabi", lat: 24.45, lng: 54.65, operator: "Oracle", capacity: "100 MW", type: "Cloud Region", region: "UAE" },
+  { name: "AWS Cape Town", lat: -33.93, lng: 18.42, operator: "Amazon AWS", capacity: "50 MW", type: "Africa Region", region: "South Africa" },
+];
+
+const straits = [
+  { name: "Strait of Hormuz", lat: 26.56, lng: 56.25, daily_flow: "20.9M bbl/day (pre-war)", share: "~20% global oil, 20% LNG", status: "BLOCKED — Iran War", controlled: "Iran / Oman", width: "33 km", note: "Only 21 tankers since Feb 28. Iran blocking US/Israel/Western allied ships." },
+  { name: "Strait of Malacca", lat: 2.5, lng: 101.5, daily_flow: "23.2M bbl/day", share: "29% global maritime oil trade", status: "Normal — Increased traffic", controlled: "Malaysia / Singapore / Indonesia", width: "2.8 km narrowest", note: "World's busiest oil chokepoint. Some Hormuz diversions rerouted here." },
+  { name: "Suez Canal", lat: 30.58, lng: 32.34, daily_flow: "4.9M bbl/day", share: "12% global trade", status: "Reduced — Houthi threat", controlled: "Egypt (SCA)", width: "205m", note: "Traffic reduced due to Houthi Red Sea attacks. Many ships diverting via Cape of Good Hope." },
+  { name: "Bab el-Mandeb", lat: 12.58, lng: 43.33, daily_flow: "4.2M bbl/day", share: "Key Red Sea access", status: "HIGH RISK — Houthi attacks", controlled: "Yemen / Djibouti / Eritrea", width: "26 km", note: "Houthis conducting anti-ship missile/drone attacks on commercial shipping since late 2023." },
+  { name: "Turkish Straits (Bosphorus)", lat: 41.12, lng: 29.05, daily_flow: "3.0M bbl/day", share: "Black Sea oil access", status: "Restricted — Montreux Convention", controlled: "Turkey", width: "700m narrowest", note: "Turkey restricting warship transit under Montreux Convention since Ukraine war." },
+  { name: "Danish Straits (Øresund/Belt)", lat: 55.7, lng: 12.6, daily_flow: "4.9M bbl/day", share: "Baltic Sea access", status: "Normal — Undersea cable concerns", controlled: "Denmark / Sweden", width: "4 km", note: "Baltic undersea cables damaged. Suspected sabotage. Increased surveillance." },
+  { name: "Panama Canal", lat: 9.08, lng: -79.68, daily_flow: "1.0M bbl/day", share: "5% global trade", status: "Drought Restrictions — 24/day", controlled: "Panama", width: "33m (locks)", note: "Drought reduced daily transits from 36 to 24. Wait times 14+ days. LNG carriers prioritized." },
+  { name: "Cape of Good Hope", lat: -34.35, lng: 18.47, daily_flow: "9.1M bbl/day (↑ 3M from 2022)", share: "11% seaborne oil (rising)", status: "SURGING — Diversion route", controlled: "Open waters / South Africa", width: "Open ocean", note: "Major increase as ships avoid Hormuz and Suez/Bab el-Mandeb. +3M bbl/day vs 2022." },
+  { name: "Strait of Taiwan", lat: 24.0, lng: 119.5, daily_flow: "~5M bbl/day", share: "Key APAC shipping lane", status: "Elevated — PLA exercises", controlled: "Disputed — Taiwan / China", width: "130 km", note: "PLA Navy carrier group Shandong conducting live-fire exercises. TSMC supply chain risk." },
+];
+
+
+// === OIL & GAS PIPELINES ===
+const pipelines = [
+  { name: "East-West Pipeline (Petroline)", points: [[25.4,49.1],[25.0,46.0],[24.5,42.0],[24.2,38.2]], capacity: "7M bbl/day (expanded 2025)", length: "1,200 km", operator: "Saudi Aramco", status: "CRITICAL — Hormuz bypass active", note: "Currently using ~2M bbl/day with 3-5M spare capacity. Primary alternative to Hormuz for Saudi exports. Connects Ghawar to Yanbu (Red Sea port)." },
+  { name: "Habshan-Fujairah Pipeline (UAE)", points: [[24.1,54.0],[25.1,56.3]], capacity: "1.8M bbl/day", length: "360 km", operator: "ADNOC", status: "CRITICAL — Hormuz bypass active", note: "UAE's bypass of Strait of Hormuz. Connects Abu Dhabi fields to Fujairah on Gulf of Oman. Fujairah port hit by Iranian strikes Mar 17." },
+  { name: "Druzhba Pipeline (Friendship)", points: [[52.0,40.0],[52.5,35.0],[52.0,30.0],[52.0,24.0],[51.5,20.0],[52.5,14.0]], capacity: "1.2-1.4M bbl/day (up to 2M)", length: "5,500 km total", operator: "Transneft (Russia)", status: "Operational — Sanctions reduced flow", note: "World's longest oil pipeline. Runs from eastern Russia to Germany, Poland, Hungary, Czech Republic, Slovakia. Northern branch to Schwedt (Germany). Southern branch through Ukraine. Sanctioned but still partially operating." },
+  { name: "Keystone Pipeline System", points: [[52.0,-110.0],[49.0,-105.0],[45.0,-97.0],[40.0,-97.0],[35.0,-97.0],[29.8,-95.0]], capacity: "590K bbl/day (Phase 1-2), 700K (Phase 3)", length: "4,324 km", operator: "TC Energy", status: "Operational", note: "Connects Alberta oil sands to US Gulf Coast refineries. Keystone XL (Phase 4) was cancelled by Biden in 2021. Existing pipeline operating at capacity." },
+  { name: "BTC Pipeline (Baku-Tbilisi-Ceyhan)", points: [[40.4,50.0],[41.7,44.8],[36.9,35.3]], capacity: "1.2M bbl/day", length: "1,768 km", operator: "BP (operator)", status: "Operational — Strategic for Europe", note: "Carries Caspian crude oil to Mediterranean. Bypasses Russia and Iran. Critical alternative supply for Europe. Connects to Ceyhan tanker terminal." },
+  { name: "SUMED Pipeline (Egypt)", points: [[29.9,32.5],[30.5,30.5],[31.0,29.8]], capacity: "2.5M bbl/day", length: "320 km", operator: "Arab Petroleum Pipeline Co.", status: "Operational — Increased use", note: "Connects Red Sea (Ain Sukhna) to Mediterranean (Sidi Kerir). Alternative to Suez Canal for oil. Increased usage due to Houthi Red Sea attacks." },
+  { name: "Trans-Alaska Pipeline (TAPS)", points: [[70.2,-148.3],[64.8,-148.0],[63.0,-145.7],[61.2,-145.5]], capacity: "500K bbl/day (design 2M)", length: "1,288 km", operator: "Alyeska Pipeline", status: "Operational — Declining flow", note: "Connects Prudhoe Bay to Valdez marine terminal. Built 1977. Flow declining as North Slope production wanes. Currently ~500K bbl/day vs 2M design capacity." },
+  { name: "Nord Stream 1 & 2 (Sabotaged)", points: [[59.9,30.0],[58.0,20.0],[54.5,13.5]], capacity: "Was 55 bcm/yr each (110 total)", length: "1,224 km each", operator: "Nord Stream AG (Gazprom)", status: "DESTROYED — Sabotaged Sep 2022", note: "Undersea gas pipelines from Russia to Germany via Baltic Sea. Sabotaged by explosions Sep 26, 2022. Investigation attributed to state-level actor. Permanently shut down. Major factor in European energy crisis." },
+  { name: "TurkStream Pipeline", points: [[44.6,38.0],[43.0,34.0],[41.5,29.0]], capacity: "31.5 bcm/yr", length: "930 km", operator: "Gazprom", status: "Operational", note: "Russia-Turkey undersea gas pipeline. 2 lines × 15.75 bcm/yr. Became critical for Russian gas exports to Europe after Nord Stream sabotage. Supplies Turkey, SE Europe." },
+  { name: "Trans-Arabian Pipeline (Tapline)", points: [[26.3,50.0],[31.0,36.5]], capacity: "Historic — Inactive", length: "1,213 km", operator: "Aramco (historic)", status: "Inactive since 1990", note: "Historic pipeline from Saudi Arabia to Lebanon. Operated 1950-1990. Route passed through Jordan, Syria, Lebanon. Closed due to political instability." },
+  { name: "Kirkuk-Ceyhan Pipeline", points: [[35.5,44.4],[37.0,42.0],[36.9,35.3]], capacity: "1.6M bbl/day (design)", length: "970 km", operator: "Iraq SOMO / Turkey BOTAS", status: "Reduced — Dispute", note: "Iraq's primary northern export route. Connects Kirkuk oil fields to Ceyhan terminal (Turkey). Flow reduced by Iraq-Turkey transit fee disputes and PKK sabotage." },
+  { name: "Eastern Siberia-Pacific Ocean (ESPO)", points: [[56.0,93.0],[52.0,107.0],[48.0,130.0],[46.0,135.0]], capacity: "1.6M bbl/day", length: "4,857 km", operator: "Transneft", status: "Operational — Maximum flow", note: "Russia's primary oil export route to Asia/China. Running at maximum capacity as Russia diverts exports from Europe to Asia. Connects Taishet to Kozmino (Pacific). Branch line to Daqing (China) carries 600K bbl/day." },
+];
+
+// === TESLA GIGAFACTORIES ===
+const teslaFactories = [
+  { name: "Tesla Fremont Factory", lat: 37.49, lng: -121.94, type: "Vehicle Assembly", capacity: "500,000+ vehicles/year", area: "370 acres / 5.3M sq ft", products: "Model S, Model 3, Model X, Model Y", employees: "22,000+", status: "Max capacity", note: "Original Tesla factory. Former GM/Toyota NUMMI plant. Largest employer in Fremont. Running 24/7 at maximum capacity." },
+  { name: "Gigafactory Nevada (Sparks)", lat: 39.54, lng: -119.44, type: "Battery & Powertrain", capacity: "35 GWh/yr (target: 100 GWh)", area: "5,000+ acres", products: "Battery cells, packs, energy storage, Semi drivetrain", employees: "11,000+", status: "Expanding", note: "Largest building in the world by footprint. Partnership with Panasonic for battery cells. Expanding to 100 GWh capacity — enough for 1.5M vehicles." },
+  { name: "Gigafactory Shanghai", lat: 31.10, lng: 121.77, type: "Vehicle Assembly", capacity: "750,000+ vehicles/year", area: "210 acres", products: "Model 3, Model Y (China + Export)", employees: "20,000+", status: "Operational", note: "Tesla's first overseas factory. Opened 2019. Currently producing ~450K/yr with capacity for 750K+. Major export hub for APAC and Europe. Subject to US-China geopolitical tensions." },
+  { name: "Gigafactory Berlin-Brandenburg", lat: 52.39, lng: 13.79, type: "Vehicle Assembly", capacity: "500,000 vehicles/yr + 50 GWh batteries", area: "740 acres", products: "Model Y (European market)", employees: "12,000+", status: "Ramp-up", note: "Tesla's European manufacturing hub. Opened Mar 2022. Faced regulatory delays and environmental protests. Ramping to full 500K/yr capacity. Includes battery cell production." },
+  { name: "Gigafactory Texas (Austin)", lat: 30.22, lng: -97.62, type: "Vehicle Assembly + HQ", capacity: "500K Model Y + Cybertruck (Phase 1), 1M+ (Phase 2)", area: "2,500 acres", products: "Model Y, Cybertruck, Semi (planned)", employees: "15,000+", status: "Expanding", note: "Tesla HQ since 2021. Cybertruck mass production. Phase 2 expansion underway. World's second-largest building by volume. Includes 4680 battery cell production line." },
+  { name: "Gigafactory New York (Buffalo)", lat: 42.88, lng: -78.78, type: "Solar & Energy", capacity: "Solar Roof, Supercharger components", area: "88 acres / 1.2M sq ft", products: "Solar Roof tiles, Megapack components, Supercharger parts", employees: "1,500+", status: "Operational", note: "Smallest Gigafactory. Focus on energy products. Building leased from State of New York. Received $750M state subsidy." },
+  { name: "Gigafactory Mexico (Monterrey — Planned)", lat: 25.67, lng: -100.31, type: "Vehicle Assembly (Planned)", capacity: "TBD — Next-gen vehicles", area: "TBD", products: "Next-gen affordable EV ($25K target)", employees: "Planned: 5,000+", status: "DELAYED — 2026 target", note: "$5 billion investment announced. Next-gen vehicle factory. Located in Monterrey, Nuevo León. Delayed from 2024 to 2025-2026 due to market conditions." },
+];
+
+// === ADDITIONAL DATA CENTERS ===
+const additionalDCs = [
+  { name: "Switch Citadel (World's Largest)", lat: 36.04, lng: -115.19, operator: "Switch", capacity: "650 MW", type: "World's largest DC — 7.2M sq ft", region: "Las Vegas, Nevada" },
+  { name: "China Telecom Inner Mongolia", lat: 40.84, lng: 111.75, operator: "China Telecom", capacity: "400+ MW", type: "10.7M sq ft — Largest by area", region: "Hohhot, China" },
+  { name: "China Mobile Hohhot", lat: 40.90, lng: 111.65, operator: "China Mobile", capacity: "130 MW", type: "7.75M sq ft, 40K racks", region: "Hohhot, China" },
+  { name: "QTS Atlanta Metro", lat: 33.75, lng: -84.39, operator: "QTS (Blackstone)", capacity: "278 MW", type: "990K sq ft Hyperscale", region: "Atlanta, Georgia" },
+  { name: "Microsoft San Antonio", lat: 29.42, lng: -98.49, operator: "Microsoft Azure", capacity: "200 MW", type: "Azure South Central", region: "San Antonio, Texas" },
+  { name: "Google The Dalles, Oregon", lat: 45.60, lng: -121.18, operator: "Google", capacity: "250 MW", type: "Hyperscale — Water-cooled", region: "The Dalles, Oregon" },
+  { name: "AWS Oregon (US-West-2)", lat: 45.84, lng: -119.70, operator: "Amazon AWS", capacity: "300+ MW", type: "Major Cloud Region", region: "Boardman, Oregon" },
+  { name: "Equinix Ashburn DC Campus", lat: 39.04, lng: -77.47, operator: "Equinix", capacity: "200 MW", type: "13% of global DC capacity in region", region: "N. Virginia — 275 DCs total" },
+  { name: "CoreWeave NJ GPU Cluster", lat: 40.73, lng: -74.17, operator: "CoreWeave", capacity: "100+ MW", type: "AI GPU Cloud — NVIDIA H100s", region: "New Jersey" },
+  { name: "Tencent Qingyuan", lat: 23.70, lng: 113.05, operator: "Tencent", capacity: "200 MW", type: "Hyperscale Cloud", region: "Guangdong, China" },
+  { name: "AWS Mumbai", lat: 19.08, lng: 72.88, operator: "Amazon AWS", capacity: "100 MW", type: "APAC South Region", region: "Mumbai, India" },
+  { name: "Microsoft Boydton", lat: 36.67, lng: -78.39, operator: "Microsoft Azure", capacity: "300 MW", type: "Azure East US", region: "Boydton, Virginia" },
+  { name: "Google Hamina, Finland", lat: 60.57, lng: 27.18, operator: "Google", capacity: "150 MW", type: "Seawater-cooled DC", region: "Hamina, Finland" },
+];
+
+// Merge additional DCs
+dataCenters.push(...additionalDCs);
+
+// === AIR DEFENSE SYSTEMS ===
+const airDefense = [
+  // US/Allied
+  { name: "THAAD Battery — Israel (Nevatim AB)", lat: 31.21, lng: 34.82, system: "THAAD (Terminal High Altitude Area Defense)", operator: "US Army / 11th ADA Brigade", range: "200 km, exoatmospheric intercept", missiles: "48 interceptors per battery", radar: "AN/TPY-2 X-band radar (1,000 km detection)", status: "Operational — First combat use Oct 2024", cls: "" },
+  { name: "THAAD Battery — Jordan (Muwaffaq Salti AB)", lat: 32.35, lng: 36.78, system: "THAAD", operator: "US Army", range: "200 km", missiles: "48 interceptors", radar: "AN/TPY-2", status: "DAMAGED — Radar struck by Iranian missile", cls: "damaged" },
+  { name: "Patriot PAC-3 — Al Udeid, Qatar", lat: 25.12, lng: 51.35, system: "MIM-104 Patriot PAC-3 MSE", operator: "US Army", range: "70 km (PAC-3 MSE)", missiles: "16 per launcher, multiple launchers", radar: "AN/MPQ-65 phased array", status: "Active — intercepting Iranian BMs", cls: "" },
+  { name: "Patriot PAC-3 — Bahrain", lat: 26.22, lng: 50.62, system: "MIM-104 Patriot PAC-3", operator: "US Army", range: "70 km", missiles: "16 per launcher", radar: "AN/MPQ-65", status: "Operational", cls: "" },
+  { name: "Patriot PAC-3 — Kuwait", lat: 29.22, lng: 47.96, system: "MIM-104 Patriot PAC-3", operator: "US Army + Kuwait", range: "70 km", missiles: "Multiple batteries", radar: "AN/MPQ-65", status: "Operational", cls: "" },
+  { name: "Patriot PAC-3 — Saudi Arabia (Riyadh)", lat: 24.71, lng: 46.68, system: "MIM-104 Patriot PAC-3 + PAC-2 GEM+", operator: "Royal Saudi Air Defense", range: "70-160 km", missiles: "Multiple batteries", radar: "AN/MPQ-65", status: "HIGH ALERT — Iran threat", cls: "" },
+  { name: "THAAD — UAE (Al Ruwais, Abu Dhabi)", lat: 24.1, lng: 52.7, system: "THAAD", operator: "UAE + US", range: "200 km", missiles: "48 interceptors", radar: "AN/TPY-2", status: "DAMAGED — Iranian drone/missile strike", cls: "damaged" },
+  { name: "Iron Dome Batteries — Israel (multiple)", lat: 32.08, lng: 34.78, system: "Iron Dome (Kipat Barzel)", operator: "Israel IDF", range: "4-70 km", missiles: "Tamir interceptor, 20 per launcher", radar: "EL/M-2084 MMR", status: "Active — 90%+ intercept rate", cls: "" },
+  { name: "David's Sling — Israel", lat: 31.86, lng: 34.72, system: "David's Sling (Kela David)", operator: "Israel IDF", range: "40-300 km", missiles: "Stunner interceptor (hit-to-kill)", radar: "EL/M-2084 + Green Pine", status: "Active — medium-range BM defense", cls: "" },
+  { name: "Arrow-3 — Israel (Palmachim AB)", lat: 31.90, lng: 34.69, system: "Arrow-3 (Hetz-3) Exoatmospheric", operator: "Israel IDF / IAI", range: "2,400 km, exoatmospheric (space intercept)", missiles: "Kill vehicle — kinetic hit-to-kill in space", radar: "Green Pine (EL/M-2080) + Super Green Pine", status: "Active — intercepting Sejjil/Emad MRBMs", cls: "" },
+  { name: "AN/TPY-2 Radar — Kürecik, Turkey", lat: 37.95, lng: 38.48, system: "AN/TPY-2 Forward-Based Mode radar", operator: "US Army", range: "1,000 km detection (early warning for Iran launches)", missiles: "Sensor only — feeds data to Patriot/THAAD/Aegis", radar: "AN/TPY-2 X-band", status: "Operational — critical early warning", cls: "" },
+  // Iranian
+  { name: "S-300PMU-2 — Tehran", lat: 35.7, lng: 51.3, system: "S-300PMU-2 Favorit (Russian-made)", operator: "Iran IRIADF", range: "200 km, altitude 27 km", missiles: "48N6E2 (4 per TEL)", radar: "30N6E2 Flap Lid-B", status: "Repositioned — attempting layered defense", cls: "enemy" },
+  { name: "Bavar-373 — Isfahan", lat: 32.65, lng: 51.68, system: "Bavar-373 (indigenous, S-300 class)", operator: "Iran IRIADF", range: "200-300 km (Sayyad-4/4B missiles)", missiles: "Sayyad-4B (extended range 300 km)", radar: "Meraj-4 AESA radar", status: "Colocated with S-300 — integrated defense", cls: "enemy" },
+  { name: "S-300 + Bavar-373 — Natanz", lat: 33.75, lng: 51.75, system: "S-300 + Bavar-373 integrated", operator: "Iran IRIADF", range: "200-300 km", missiles: "Sayyad-4 + 48N6", radar: "Integrated network", status: "OVERWHELMED — Natanz destroyed despite defense", cls: "enemy" },
+  // Russian
+  { name: "S-400 Triumf — Hmeimim AB, Syria", lat: 35.41, lng: 35.96, system: "S-400 Triumf (NATO: SA-21 Growler)", operator: "Russia VKS", range: "400 km (40N6 missile)", missiles: "40N6, 48N6, 9M96 (mixed loadout)", radar: "92N6 Grave Stone + 96L6 Cheese Board", status: "Operational — covering Syria/E. Med", cls: "enemy" },
+  { name: "S-400 — Kaliningrad", lat: 54.72, lng: 20.52, system: "S-400 Triumf", operator: "Russia VKS", range: "400 km", missiles: "40N6 extended range", radar: "92N6 + Nebo-M", status: "Operational — covering Baltics", cls: "enemy" },
+];
+
+// === AIRCRAFT DEPLOYMENTS ===
+const aircraft = [
+  // US/Allied
+  { name: "12x F-22 Raptor — Ovda AB, Israel", lat: 29.94, lng: 34.94, type: "F-22A Raptor (5th gen air superiority)", qty: "12", unit: "USAF", speed: "Mach 2.25 / supercruise Mach 1.82", weapons: "AIM-120D AMRAAM, AIM-9X, JDAM, SDB", range: "2,960 km", note: "First time F-22s deployed to Israel for real combat ops. Escorted B-2 bombers during strikes on Iran. Air superiority over theater." },
+  { name: "30x F-35A/C Lightning II — CENTCOM Theater", lat: 25.5, lng: 51.0, type: "F-35A Lightning II (5th gen stealth multirole)", qty: "30+ (48th FW Lakenheath + VT ANG 158th FW + carrier F-35Cs)", unit: "USAF / USN", speed: "Mach 1.6", weapons: "AIM-120D, GBU-31/32 JDAM, JSM, SDB II", range: "2,220 km", note: "18 F-35s from RAF Lakenheath (UK) + 12 F-35As from Vermont ANG. F-35C on Ford/Lincoln carriers. One made emergency landing Mar 19 after Iran combat mission." },
+  { name: "F-15E Strike Eagles — Jordan", lat: 32.35, lng: 36.78, type: "F-15E Strike Eagle (deep strike)", qty: "12+", unit: "USAF", speed: "Mach 2.5", weapons: "GBU-28 bunker busters, JDAM, SLAM-ER, AIM-120", range: "3,900 km (with CFTs)", note: "Deployed to Muwaffaq Salti AB, Jordan. Primary deep-strike platform. Can deliver GBU-28 5,000-lb bunker busters." },
+  { name: "B-2 Spirit — Diego Garcia (deployed from Whiteman)", lat: -7.32, lng: 72.42, type: "B-2A Spirit (stealth strategic bomber)", qty: "3-6 (classified)", unit: "USAF 509th Bomb Wing", speed: "Mach 0.95 (high subsonic stealth)", weapons: "GBU-57 MOP (14t bunker buster), B83 nuclear, JDAM x80", range: "11,100 km (unrefueled)", note: "Only aircraft that can deliver GBU-57 Massive Ordnance Penetrator — 14 tonnes, penetrates 60m reinforced concrete. Used against Natanz underground centrifuge halls." },
+  { name: "E/A-18G Growler EW — USS Ford CVW", lat: 20.0, lng: 40.0, type: "EA-18G Growler (electronic warfare)", qty: "5", unit: "USN VAQ-140", speed: "Mach 1.8", weapons: "AGM-88E AARGM (anti-radiation), ALQ-99/249 jamming pods", range: "1,800 km", note: "Electronic warfare aircraft jamming Iranian air defense radars. AGM-88E anti-radiation missiles home on enemy radar emissions." },
+  { name: "MQ-9 Reaper Drones — Al Udeid/Djibouti", lat: 25.12, lng: 51.32, type: "MQ-9 Reaper (MALE UAV)", qty: "20+", unit: "USAF", speed: "480 km/h", weapons: "Hellfire, GBU-12, GBU-38 JDAM", range: "1,850 km / 27hr endurance", note: "Persistent ISR and strike over Iran, Yemen, Red Sea. 27-hour endurance for continuous surveillance." },
+  // Israeli
+  { name: "F-35I Adir — Nevatim AB, Israel", lat: 31.21, lng: 34.82, type: "F-35I Adir (Israeli F-35 variant)", qty: "50+ (2 squadrons)", unit: "Israel IAF 116/140 'Knights' Sqn", speed: "Mach 1.6", weapons: "Custom Israeli EW suite, Python-5, Spice bombs, Rocks ALCM", range: "2,220 km", note: "Israeli-modified F-35 with indigenous EW and weapons. Leading strikes on Iran. Adir = 'Mighty One' in Hebrew." },
+  // Russian
+  { name: "Su-35S Flanker-E — Hmeimim AB, Syria", lat: 35.41, lng: 35.95, type: "Su-35S Flanker-E (4++ gen air superiority)", qty: "4-6", unit: "Russia VKS", speed: "Mach 2.25", weapons: "R-77 AMRAAM-ski, R-73, Kh-31, KAB bombs", range: "3,600 km", note: "Russia's top fighter deployed to Syria. Maintaining presence despite Iran war. Monitoring US/Israeli operations." },
+  { name: "Tu-95MS Bear-H — Vologda/Engels (Russia)", lat: 58.45, lng: 41.27, type: "Tu-95MS Bear-H (strategic bomber)", qty: "60+ in fleet", unit: "Russia VKS Long Range Aviation", speed: "830 km/h", weapons: "Kh-101/102 ALCM (5,500 km range), 6-8 per aircraft", range: "15,000 km", note: "Launching Kh-101 cruise missiles at Ukraine from stand-off range. 24 Kh-101 launched in single salvo Mar 14. Russia ordered 525 Kh-101 in 2024, 700 in 2025." },
+  { name: "Su-34 Fullback — Morozovsk AB (Russia)", lat: 48.32, lng: 41.78, type: "Su-34 Fullback (fighter-bomber)", qty: "80+ in VKS", unit: "Russia VKS", speed: "Mach 1.8", weapons: "KAB-500/1500 glide bombs (UMPK kit, 70km), FAB-3000", range: "4,000 km", note: "Primary platform dropping KAB glide bombs on Kharkiv. UMPK kit converts dumb bombs to GPS-guided glide weapons — dropped from 70km away, outside Ukrainian air defense range." },
+  // Iranian
+  { name: "Shahed-136 Drone Launch Sites — W. Iran", lat: 33.5, lng: 48.5, type: "Shahed-136 (loitering munition / kamikaze drone)", qty: "Hundreds in inventory", unit: "Iran IRGC / HESA", speed: "185 km/h", weapons: "40 kg warhead (shaped charge)", range: "2,000-2,500 km", note: "Delta-wing kamikaze drone. GPS+inertial guidance. $20,000 per unit. Same design Russia uses in Ukraine (renamed Geran-2). Mass-produced. Used against Duqm, Salalah, UAE targets." },
+];
+
+// === NAVAL DEPLOYMENTS ===
+const naval = [
+  { name: "USS Gerald R. Ford CSG (CVN-78)", lat: 20.0, lng: 40.0, type: "Nimitz-class replacement — Ford-class Carrier", displacement: "100,000 tons", airwing: "CVW-8: F/A-18E/F, F-35C, E-2D, EA-18G, MH-60R/S (~75 aircraft)", escorts: "CG-52 Ticonderoga cruiser, 3x DDG Arleigh Burke destroyers, SSN attack sub", crew: "4,539 + air wing", status: "Red Sea — Operation Epic Fury", note: "World's most advanced warship. EMALS catapult system. Operating in Red Sea supporting strikes on Iran and protecting shipping from Houthi attacks." },
+  { name: "USS Abraham Lincoln CSG (CVN-72)", lat: 22.0, lng: 60.0, type: "Nimitz-class Aircraft Carrier", displacement: "97,000 tons", airwing: "CVW-9: F/A-18E/F, F-35C, E-2D, EA-18G (~70 aircraft)", escorts: "2x CG Ticonderoga cruisers, 3x DDG Burke destroyers, SSN attack sub", crew: "5,680 + air wing", status: "Arabian Sea — Operation Epic Fury", note: "Second carrier deployed for Iran war. Redirected from Pacific deployment. Launching strikes on Iranian targets and providing fleet air defense." },
+  { name: "USS George Washington (CVN-73)", lat: 35.29, lng: 139.67, type: "Nimitz-class Aircraft Carrier", displacement: "97,000 tons", airwing: "CVW-5 (~70 aircraft)", escorts: "Standard CSG escorts", crew: "5,680 + air wing", status: "Yokosuka, Japan — Western Pacific", note: "Forward-deployed carrier in Japan. Deterrence against China/North Korea. Maintaining Pacific presence despite Middle East crisis." },
+  { name: "USS Tripoli ARG (LHA-7)", lat: 10.0, lng: 120.0, type: "America-class Amphibious Assault Ship", displacement: "44,971 tons", airwing: "F-35B STOVL, MV-22 Osprey, AH-1Z Viper, CH-53K", escorts: "LPD San Antonio-class, LSD Whidbey Island-class", crew: "1,204 + 1,800 Marines", status: "En route Middle East from South China Sea", note: "Amphibious Ready Group with embarked Marine Expeditionary Unit. F-35B capable. Moving from SCS to reinforce Middle East." },
+  { name: "IRGC Fast Attack Craft — Strait of Hormuz", lat: 26.8, lng: 56.5, type: "IRGC Navy — Swarm boats + FACs", displacement: "Various (10-500 tons)", airwing: "N/A", escorts: "Dozens of fast boats in swarms", crew: "Various", status: "ACTIVE — Enforcing Hormuz blockade", note: "IRGC Navy fast attack craft conducting aggressive patrols. Includes Zolfaqar-class catamaran missile boats (C-802 ASMs), Bladerunner-class speedboats. Swarm tactics against larger vessels." },
+  { name: "Russian Black Sea Fleet — Novorossiysk", lat: 44.72, lng: 37.77, type: "Kalibr-armed frigates + subs", displacement: "Various", airwing: "N/A", escorts: "Admiral Grigorovich frigates, Kilo subs", crew: "Various", status: "Launching Kalibr at Ukraine", note: "25 Kalibr cruise missiles launched from Black Sea ships in Mar 14 salvo. Fleet relocated from Sevastopol to Novorossiysk after Ukrainian attacks." },
+  { name: "Ohio-class SSGN (estimated Gulf region)", lat: 24.0, lng: 57.0, type: "Ohio-class SSGN (converted SSBN)", displacement: "18,750 tons submerged", airwing: "N/A", escorts: "Solo — stealth submarine", crew: "155", status: "CLASSIFIED — estimated position", note: "Ohio-class SSGN can carry 154 Tomahawk cruise missiles. Stealthiest strike platform. Exact position classified. USS Georgia or USS Florida likely in Gulf region for Iran campaign." },
+];
+
+// === SUBMARINE CABLES (key routes) ===
+const subCables = [
+  { name: "FLAG (Fiber-optic Link Around the Globe)", points: [[51.4,-1.0],[36.0,-5.0],[31.0,32.5],[12.6,43.3],[25.0,55.0],[19.0,72.8],[1.3,103.8],[22.3,114.2],[35.7,139.8]], capacity: "10 Tbps", length: "28,000 km", status: "At risk — Hormuz/Red Sea", note: "One of oldest global submarine cables. Passes through Strait of Hormuz and Red Sea — both conflict zones." },
+  { name: "SEA-ME-WE 3 (South East Asia–Middle East–Western Europe)", points: [[50.7,-1.0],[36.0,0.0],[31.2,32.5],[12.6,43.3],[25.0,56.0],[19.0,72.8],[6.9,79.8],[1.3,103.8],[22.3,114.2],[35.7,139.8]], capacity: "40+ Tbps", length: "39,000 km", status: "At risk — Red Sea segment", note: "Major Europe-Asia cable. 17 submarine cables pass through Red Sea alone. Houthi attacks and Iran war threaten physical infrastructure." },
+  { name: "AAE-1 (Asia-Africa-Europe)", points: [[13.4,52.0],[12.6,43.3],[31.0,32.5],[35.2,24.0],[38.0,15.5],[43.3,5.5],[48.8,2.3]], capacity: "40 Tbps", length: "25,000 km", status: "Disrupted — Red Sea damage", note: "Key Europe-Asia link. Multiple cable cuts reported in Red Sea area. Possible anchor damage from ships diverting due to Houthi attacks." },
+  { name: "TAT-14 (Transatlantic)", points: [[40.5,-74.0],[51.5,-1.0]], capacity: "3.2 Tbps", length: "15,428 km", status: "Operational", note: "Transatlantic backbone. Connects US East Coast to Europe. 99% of US-Europe internet traffic goes via submarine cable." },
+  { name: "MAREA (Microsoft/Facebook Transatlantic)", points: [[39.3,-74.3],[37.0,-8.0]], capacity: "224 Tbps", length: "6,600 km", status: "Operational", note: "Highest-capacity transatlantic cable. Microsoft + Meta joint venture. Virginia Beach to Bilbao, Spain." },
+  { name: "Baltic cables (damaged)", points: [[59.4,24.7],[55.7,12.6],[54.3,10.1]], capacity: "Various", length: "~1,200 km", status: "DAMAGED — suspected sabotage", note: "2 fiber optic cables near Finnish EEZ showing anomalous signal loss. Investigation underway. Suspected sabotage — increased NATO surveillance. Critical for Baltic states' internet." },
+  { name: "PEACE Cable (Pakistan/E.Africa/Connect Europe)", points: [[25.0,66.9],[12.6,43.3],[31.0,32.5],[36.2,1.5],[38.7,-9.1]], capacity: "96 Tbps", length: "15,000 km", status: "At risk — Red Sea", note: "Partially Chinese-funded (Hengtong Group). Key for China's Digital Silk Road. Red Sea segment at risk from conflict." },
+];
+
+// === NUCLEAR ARSENAL SITES ===
+const nukeSites = [
+  { name: "US ICBM Field — Malmstrom AFB, Montana", lat: 47.51, lng: -111.18, country: "USA", warheads: "150 Minuteman III ICBMs (1-3 MIRV each)", range: "13,000 km", type: "LGM-30G Minuteman III (silo-based ICBM)", total: "US total: 5,400 warheads, 1,744 deployed", note: "341st Missile Wing. Part of US nuclear triad. 150 silos across Montana. Each Minuteman III carries 1-3 W87 thermonuclear warheads (300 kt each). 80-ft deep hardened silos. 30-min launch authorization." },
+  { name: "US ICBM Field — Minot AFB, North Dakota", lat: 48.42, lng: -101.36, country: "USA", warheads: "150 Minuteman III ICBMs", range: "13,000 km", type: "LGM-30G Minuteman III", total: "Part of 5 Great Plains states", note: "91st Missile Wing. Also hosts B-52H Stratofortress bombers with AGM-86B ALCMs. Dual ICBM + bomber base." },
+  { name: "US SSBN Base — Kings Bay, Georgia", lat: 30.8, lng: -81.5, country: "USA", warheads: "6 Ohio-class SSBNs (24 Trident II D5 each)", range: "12,000 km (Trident II D5)", type: "UGM-133A Trident II (SLBM)", total: "Each sub: up to 192 warheads", note: "Home of Atlantic SSBN fleet. Each Ohio-class carries 24 Trident II missiles × 8 W88 warheads = 192 warheads per submarine. Single sub can destroy an entire country." },
+  { name: "Russian ICBM — Kozelsk (SS-27 Topol-M)", lat: 54.04, lng: 35.77, country: "Russia", warheads: "RS-12M2 Topol-M (silo-based)", range: "11,000 km", type: "RS-12M2 Topol-M (NATO: SS-27 Sickle-B)", total: "Russia total: 5,459 warheads", note: "60th Missile Division. Topol-M in silo configuration. Single-warhead ICBM with advanced countermeasures against ABM systems." },
+  { name: "Russian ICBM — Uzhur (RS-28 Sarmat)", lat: 55.31, lng: 89.81, country: "Russia", warheads: "RS-28 Sarmat (10-15 MIRV warheads each)", range: "18,000 km", type: "RS-28 Sarmat (NATO: SS-X-30 Satan II)", total: "World's heaviest ICBM — 208 tonnes", note: "62nd Missile Division. Sarmat = world's most powerful ICBM. 10-15 MIRVed warheads + Avangard hypersonic glide vehicles. Can attack via South Pole to evade US missile defense." },
+  { name: "Russian SSBN Base — Vilyuchinsk (Pacific)", lat: 52.93, lng: 158.40, country: "Russia", warheads: "Borei-class SSBNs (16 Bulava SLBMs each)", range: "9,300 km (RSM-56 Bulava)", type: "Borei-A class SSBN", total: "New-generation nuclear subs", note: "Pacific Fleet SSBN base. Borei-A class — Russia's newest nuclear submarine. Each carries 16 Bulava SLBMs. Virtually undetectable when submerged." },
+  { name: "Chinese ICBM Silo Field — Yumen, Gansu", lat: 40.3, lng: 97.0, country: "China", warheads: "~120 new ICBM silos (DF-41)", range: "12,000-15,000 km", type: "DF-41 (CSS-X-20) — 10 MIRV warheads", total: "China: 600+ warheads, target 1,000 by 2030", note: "One of 3 new silo fields discovered 2021 by satellite imagery. ~120 silos for DF-41 ICBMs. Total: ~350 new silos across Yumen, Hami, Ordos. Massive expansion of Chinese nuclear capability." },
+  { name: "Chinese ICBM — Hami, Xinjiang", lat: 42.8, lng: 93.5, country: "China", warheads: "~110 ICBM silos", range: "12,000 km", type: "DF-41 ICBM", total: "Part of rapid expansion", note: "Second silo field discovered in desert. Under construction/near completion. Unprecedented Chinese nuclear buildup." },
+  { name: "UK SSBN — HMNB Clyde (Faslane)", lat: 56.07, lng: -4.82, country: "UK", warheads: "4 Vanguard-class SSBNs (16 Trident II each)", range: "12,000 km", type: "UGM-133A Trident II D5 (US-purchased)", total: "UK: 225 warheads, 120 operationally available", note: "UK's sole nuclear deterrent. Continuous At-Sea Deterrence (CASD) since 1969 — one submarine always at sea. Each sub: 16 Trident II × 8 warheads." },
+  { name: "French SSBN — Île Longue, Brittany", lat: 48.31, lng: -4.61, country: "France", warheads: "4 Triomphant-class SSBNs (16 M51 SLBMs each)", range: "10,000 km", type: "M51 SLBM (French-built)", total: "France: 290 warheads, 280 deployed", note: "French Force de Dissuasion. M51 SLBMs with TN-75 thermonuclear warheads. Plus ASMP-A air-launched cruise missiles on Rafale fighters." },
+  { name: "Israeli Nuclear (undeclared) — Dimona", lat: 31.0, lng: 35.15, country: "Israel", warheads: "Est. 90 warheads (undeclared)", range: "Jericho III: 4,800-6,500 km", type: "Jericho III IRBM + Dolphin-class submarine SLCMs", total: "Estimated 90 warheads — not confirmed", note: "Israel's nuclear program is officially undeclared (policy of 'nuclear ambiguity'). Negev Nuclear Research Center at Dimona. TARGETED by Iranian Kheibar Shekan missiles Mar 21. Jericho III used in strikes on Iran." },
+  { name: "Pakistan Nuclear — Sargodha/Kamra", lat: 32.05, lng: 72.67, country: "Pakistan", warheads: "170 warheads", range: "Shaheen-III: 2,750 km", type: "Shaheen-II/III MRBM, Babur cruise missile", total: "170 warheads, expanding", note: "Pakistan's strategic forces. Land-based Shaheen missiles and Babur GLCMs. Focused on India deterrence. Fastest-growing nuclear arsenal." },
+  { name: "India Nuclear — Agni-V Complex", lat: 15.23, lng: 80.15, country: "India", warheads: "180 warheads", range: "Agni-V: 5,000-8,000 km (ICBM)", type: "Agni-V ICBM, K-4/K-15 SLBM, BrahMos", total: "180 warheads, expanding", note: "India's strategic triad. Agni-V ICBM tested successfully — can reach Beijing. Arihant-class SSBN with K-4 SLBMs. BrahMos supersonic cruise missiles." },
+  { name: "North Korea ICBM — Sil-li / Sohae", lat: 39.66, lng: 124.71, country: "DPRK", warheads: "Est. 50-90 warheads", range: "Hwasong-18: 15,000 km (solid-fuel ICBM)", type: "Hwasong-15/17/18 ICBMs", total: "50-90 warheads estimated", note: "Hwasong-18 solid-fuel ICBM tested 2023 — mobile, hard to track. Can reach all of continental US. Kim Jong Un expanding arsenal rapidly." },
+];
+
+// === LAYER GROUPS ===
+const layerGroups = {
+  conflicts: L.layerGroup(),
+  attacks: L.layerGroup(),
+  bases: L.layerGroup(),
+  tankers: L.layerGroup(),
+  energy: L.layerGroup(),
+  datacenters: L.layerGroup(),
+  straits: L.layerGroup(),
+  pipelines: L.layerGroup(),
+  factories: L.layerGroup(),
+  airdefense: L.layerGroup(),
+  aircraft: L.layerGroup(),
+  naval: L.layerGroup(),
+  cables: L.layerGroup(),
+  nukes: L.layerGroup()
+};
+
+Object.values(layerGroups).forEach(lg => lg.addTo(map));
+
+// === EXTENDED INTEL DATA FOR POPUPS ===
+const conflictIntel = {
+  "Iran War (US/Israel vs Iran)": `<div class="popup-section-title">SITUATION REPORT — DAY 22</div>
+    <div class="popup-text">Joint US-Israeli strikes began Feb 28, 2026. Supreme Leader Khamenei killed in initial strike on Leadership House compound. IRGC Malek-Ashtar building in Tehran completely destroyed. State broadcaster IRIB HQ hit Mar 3.</div>
+    <div class="popup-section-title">CASUALTIES & DAMAGE</div>
+    <div class="popup-detail"><span class="popup-detail-label">Iranian Military Dead</span><span class="popup-detail-value danger">5,300+ (Hengaw estimate Mar 18)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Iranian Civilian Dead</span><span class="popup-detail-value danger">1,500+ (Health Ministry)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Israeli Dead</span><span class="popup-detail-value danger">15 (Iranian missiles)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">US Military Dead</span><span class="popup-detail-value danger">13</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Gulf Civilian Dead</span><span class="popup-detail-value danger">Dozens (UAE, Oman, Kuwait)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Initial Strike Incident</span><span class="popup-detail-value danger">170 killed — missile hit girls' school near Minab naval base</span></div>
+    <div class="popup-section-title">NUCLEAR PROGRAM IMPACT</div>
+    <div class="popup-detail"><span class="popup-detail-label">Natanz Enrichment</span><span class="popup-detail-value danger">DESTROYED</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Setback Estimate</span><span class="popup-detail-value warning">Months to years (CIA: severe damage)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Uranium Stockpile</span><span class="popup-detail-value warning">Much moved before strikes (intel)</span></div>
+    <div class="popup-section-title">ECONOMIC IMPACT</div>
+    <div class="popup-detail"><span class="popup-detail-label">Brent Crude</span><span class="popup-detail-value danger">$112.19 (+60% surge)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Hormuz Status</span><span class="popup-detail-value danger">Partially blocked — 21 tankers since Feb 28 (was 100+/day)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Gulf Oil Production Lost</span><span class="popup-detail-value danger">10M+ bbl/day (largest disruption ever)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">IEA SPR Release</span><span class="popup-detail-value warning">400M barrels coordinated release</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">QatarEnergy</span><span class="popup-detail-value danger">Force majeure on all LNG exports</span></div>
+    <div class="popup-section-title">IRAN RETALIATION</div>
+    <div class="popup-text">Iran targeting Israel (Dimona nuclear site), oil refineries, US bases, airports, and shipping across 6 Gulf states. 21 confirmed attacks on merchant ships as of Mar 12. Drones struck Duqm & Salalah (Oman), UAE gas field set ablaze.</div>
+    <div class="popup-section-title">LATEST (MAR 22)</div>
+    <div class="popup-text">Trump 48h ultimatum: threatens to "hit and obliterate" Iran's power plants if Hormuz not reopened. Israel says "war not close to ending." Netanyahu threatens more attacks after Arad strike.</div>`,
+
+  "Ukraine - Russia War": `<div class="popup-section-title">SITUATION REPORT — YEAR 4</div>
+    <div class="popup-text">Largest conventional land war in Europe since WWII. Now in 4th year. War of attrition along ~1,000km frontline. Russia losing more soldiers than recruiting since Nov 2025 (40,000/month losses).</div>
+    <div class="popup-section-title">CASUALTIES (VERIFIED)</div>
+    <div class="popup-detail"><span class="popup-detail-label">Russian Military Dead</span><span class="popup-detail-value danger">267,000–385,500 (BBC, Feb 2026)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Russian Total Casualties</span><span class="popup-detail-value danger">~1,200,000 (killed/wounded/missing — CSIS/WSJ)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Russian Monthly Losses</span><span class="popup-detail-value danger">40,000/month since Nov 2025</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Ukrainian Military Dead</span><span class="popup-detail-value danger">86,142 documented by name + 89,324 MIA</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Ukrainian Total Casualties</span><span class="popup-detail-value danger">500,000–600,000 (CSIS estimate)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Ukrainian Fatalities</span><span class="popup-detail-value danger">100,000–140,000 (CSIS)</span></div>
+    <div class="popup-section-title">FRONTLINE & TERRITORY</div>
+    <div class="popup-detail"><span class="popup-detail-label">Russian-Controlled Territory</span><span class="popup-detail-value">~45,778 sq mi (~20% of Ukraine)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Recent Movement (Feb-Mar 2026)</span><span class="popup-detail-value safe">Russia LOST 57 sq mi</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Frontline Status</span><span class="popup-detail-value warning">Sluggish Russian offensives, limited breakthroughs</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Key Fronts</span><span class="popup-detail-value">Donetsk, Zaporizhzhia, Kherson, Kharkiv</span></div>
+    <div class="popup-section-title">WEAPONS & TACTICS</div>
+    <div class="popup-text">Continued drone/missile exchanges. Russia using KAB glide bombs on Kharkiv. Ukraine striking Crimea, Belgorod with Storm Shadow/SCALP and drones. Russia recruiting exceeded by losses for first time.</div>`,
+
+  "Israel - Gaza / Palestine": `<div class="popup-section-title">SITUATION REPORT — MONTH 17</div>
+    <div class="popup-text">Ongoing since Hamas attack Oct 7, 2023. Urban warfare in Gaza Strip. Now part of broader regional conflict with Iran (since Feb 28, 2026). Ceasefire brokered Oct 2025 but violations ongoing.</div>
+    <div class="popup-section-title">CASUALTIES</div>
+    <div class="popup-detail"><span class="popup-detail-label">Palestinian Dead (Gaza)</span><span class="popup-detail-value danger">72,135 (MoH Gaza, Mar 11 2026)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Palestinian Injured</span><span class="popup-detail-value danger">171,830</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Total Both Sides</span><span class="popup-detail-value danger">75,227+ (incl. 2,039 Israelis)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Post-Ceasefire Killed</span><span class="popup-detail-value danger">800+ Palestinians since Oct 2025 ceasefire</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Civilian Share</span><span class="popup-detail-value danger">~80% civilians, 70% women & children (OHCHR)</span></div>
+    <div class="popup-section-title">DISPLACEMENT & HUMANITARIAN</div>
+    <div class="popup-detail"><span class="popup-detail-label">Displaced Persons</span><span class="popup-detail-value danger">1.2 million in 990 sites</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Site Types</span><span class="popup-detail-value">78% makeshift, 19% collective centers</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Infrastructure</span><span class="popup-detail-value danger">Vast destruction across Gaza Strip</span></div>`,
+
+  "Sudan Civil War": `<div class="popup-section-title">SITUATION REPORT — 1,000+ DAYS</div>
+    <div class="popup-text">Civil war between Sudanese Armed Forces (SAF) and Rapid Support Forces (RSF) since April 2023. WHO declared it world's worst health & humanitarian crisis.</div>
+    <div class="popup-section-title">CASUALTIES & VIOLENCE</div>
+    <div class="popup-detail"><span class="popup-detail-label">Total Dead (est.)</span><span class="popup-detail-value danger">Up to 400,000 (former US envoy)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Khartoum State Dead</span><span class="popup-detail-value danger">61,000 (26,000 from direct violence)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">ACLED Verified</span><span class="popup-detail-value danger">20,373 killed (Aug 2024–Aug 2025)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Healthcare Attacks</span><span class="popup-detail-value danger">201 verified — 1,858 deaths (WHO)</span></div>
+    <div class="popup-section-title">DISPLACEMENT</div>
+    <div class="popup-detail"><span class="popup-detail-label">Total Displaced</span><span class="popup-detail-value danger">13.6 million (world's largest)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Internally Displaced</span><span class="popup-detail-value danger">9.3 million</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Cross-Border Refugees</span><span class="popup-detail-value danger">4.3 million (Chad, Egypt, etc.)</span></div>
+    <div class="popup-section-title">HUMANITARIAN CRISIS</div>
+    <div class="popup-detail"><span class="popup-detail-label">Need Humanitarian Aid</span><span class="popup-detail-value danger">33.7 million (~2/3 of population)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Severe Food Insecurity</span><span class="popup-detail-value danger">25 million</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Famine Conditions</span><span class="popup-detail-value danger">635,000 people</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Malnourished Children</span><span class="popup-detail-value danger">4 million (770K at imminent death risk)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Health Facilities Down</span><span class="popup-detail-value danger">37% non-functional</span></div>`,
+
+  "Myanmar Civil War": `<div class="popup-section-title">SITUATION REPORT — YEAR 5</div>
+    <div class="popup-text">Multi-front resistance against military junta since Feb 2021 coup. Resistance making significant territorial gains. Junta using brutal airstrikes including paramotor attacks on civilians.</div>
+    <div class="popup-section-title">CASUALTIES</div>
+    <div class="popup-detail"><span class="popup-detail-label">Total Dead</span><span class="popup-detail-value danger">75,000+ (UN)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Civilians Killed</span><span class="popup-detail-value danger">4,962+ documented (likely double actual)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Paramotor Attacks</span><span class="popup-detail-value danger">135+ since Dec 2024</span></div>
+    <div class="popup-section-title">TERRITORY CONTROL</div>
+    <div class="popup-detail"><span class="popup-detail-label">Junta Controls</span><span class="popup-detail-value danger">Only 21% of territory</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Resistance Controls</span><span class="popup-detail-value safe">42% (rebel forces + ethnic armies)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Contested</span><span class="popup-detail-value warning">37%</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Resistance Advance</span><span class="popup-detail-value">Pushing toward Mandalay (Bamar heartland)</span></div>
+    <div class="popup-section-title">HUMANITARIAN</div>
+    <div class="popup-detail"><span class="popup-detail-label">Displaced</span><span class="popup-detail-value danger">5.2 million (internal + cross-border)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Food Insecurity</span><span class="popup-detail-value danger">Acute — escalating airstrikes on civilian infrastructure</span></div>`,
+};
+
+// Extended base intel
+const baseIntel = {
+  "Ramstein Air Base": `<div class="popup-section-title">INSTALLATION DETAILS</div>
+    <div class="popup-detail"><span class="popup-detail-label">Location</span><span class="popup-detail-value">Rhineland-Palatinate, Germany</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Host Unit</span><span class="popup-detail-value">86th Airlift Wing</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">HQ For</span><span class="popup-detail-value">USAFE-AFAFRICA + NATO AIRCOM</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Groups/Squadrons</span><span class="popup-detail-value">7 groups, 30 squadrons, 4 bases</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Aircraft</span><span class="popup-detail-value">C-130J, C-21, C-37A Gulfstream</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Flying Squadrons</span><span class="popup-detail-value">37th AS, 76th AS</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Other Major Units</span><span class="popup-detail-value">435th AGOW, 521st AMOW, 3rd AF, 693rd ISR Group</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Army Units</span><span class="popup-detail-value">21st Theater Sustainment Command</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">KMC Total Population</span><span class="popup-detail-value">54,000 Americans + 6,200 German employees</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">AF Military Personnel</span><span class="popup-detail-value">9,800 + 11,100 family members</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Strategic Role</span><span class="popup-detail-value">Primary US power projection hub in Europe. Ukraine Contact Group meetings held here.</span></div>`,
+
+  "Camp Humphreys (Largest Overseas)": `<div class="popup-section-title">INSTALLATION DETAILS</div>
+    <div class="popup-detail"><span class="popup-detail-label">Location</span><span class="popup-detail-value">Pyeongtaek, South Korea (60mi from DMZ)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value danger">LARGEST US OVERSEAS BASE</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Area</span><span class="popup-detail-value">3,454 acres (1,398 ha)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Buildings</span><span class="popup-detail-value">500+</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Construction Cost</span><span class="popup-detail-value">$10.7 billion (93% paid by S. Korea)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Population</span><span class="popup-detail-value">45,000+</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">US Troops in S. Korea</span><span class="popup-detail-value">28,500</span></div>
+    <div class="popup-section-title">COMMAND STRUCTURE</div>
+    <div class="popup-detail"><span class="popup-detail-label">HQ For</span><span class="popup-detail-value">US Forces Korea (USFK)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Also HQ For</span><span class="popup-detail-value">US Eighth Army, 2nd Infantry Division</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Combined Forces</span><span class="popup-detail-value">US-ROK Combined Forces Command, UN Command</span></div>
+    <div class="popup-section-title">EQUIPMENT & ASSETS</div>
+    <div class="popup-detail"><span class="popup-detail-label">Airfield</span><span class="popup-detail-value">Desiderio AAF — busiest US Army airfield in Asia</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Runway</span><span class="popup-detail-value">8,124 ft (2,476m)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Aviation</span><span class="popup-detail-value">Combat Aviation Brigade — Apache, Chinook helicopters</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Facilities</span><span class="popup-detail-value">Guard towers, tank training areas, firing ranges</span></div>`,
+};
+
+// Extended energy intel
+const energyIntel = {
+  "Ghawar Oil Field (World's Largest)": `<div class="popup-section-title">FIELD DATA</div>
+    <div class="popup-detail"><span class="popup-detail-label">Discovery</span><span class="popup-detail-value">1948, Production since 1951</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Operator</span><span class="popup-detail-value">Saudi Aramco</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Classification</span><span class="popup-detail-value">World's largest conventional oil field</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Daily Production</span><span class="popup-detail-value">3.8 million bbl/day</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Original Oil in Place</span><span class="popup-detail-value">250+ billion barrels</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Recoverable Reserves</span><span class="popup-detail-value">70+ billion barrels</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Remaining (2018 est.)</span><span class="popup-detail-value">48.25 billion barrels liquid</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Total BOE</span><span class="popup-detail-value">58.3 billion bbl oil-equivalent</span></div>
+    <div class="popup-section-title">2026 OPERATIONS</div>
+    <div class="popup-detail"><span class="popup-detail-label">EOR Technology</span><span class="popup-detail-value">CO2 + chemical injection (+400K bbl/day)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Monitoring</span><span class="popup-detail-value">Advanced digital monitoring systems</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Lifespan</span><span class="popup-detail-value">Expected to produce at max capacity beyond 2050</span></div>
+    <div class="popup-section-title">STRATEGIC CONTEXT (IRAN WAR)</div>
+    <div class="popup-text">Ghawar is within range of Iranian ballistic missiles. Saudi Arabia on HIGH ALERT. Abqaiq processing plant (7M bbl/day throughput) was attacked by drones in 2019 — Iran demonstrated capability to strike Saudi energy infrastructure. KSA diverting oil to Red Sea port Yanbu via East-West Pipeline.</div>`,
+
+  "Kharg Island Oil Terminal (STRUCK)": `<div class="popup-section-title">DAMAGE ASSESSMENT</div>
+    <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value danger">DAMAGED BY US STRIKES</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Pre-War Capacity</span><span class="popup-detail-value">5 million bbl/day export capacity</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Share of Iran Exports</span><span class="popup-detail-value danger">~90% of all Iranian oil exports</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Current Status</span><span class="popup-detail-value danger">Severely damaged — exports halted</span></div>
+    <div class="popup-section-title">STRATEGIC IMPORTANCE</div>
+    <div class="popup-text">Kharg Island was Iran's primary oil export terminal, handling 90% of all crude oil shipments. US strikes targeted storage tanks and loading facilities. Iran's oil revenue — the primary funding source for its military — has been decimated.</div>
+    <div class="popup-detail"><span class="popup-detail-label">Iran Oil Revenue Impact</span><span class="popup-detail-value danger">Near-total loss of export capability</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Global Supply Impact</span><span class="popup-detail-value danger">~1.5M bbl/day removed from market</span></div>`,
+};
+
+// Extended datacenter intel
+const dcIntel = {
+  "Stargate I (xAI/Oracle)": `<div class="popup-section-title">FACILITY SPECIFICATIONS</div>
+    <div class="popup-detail"><span class="popup-detail-label">Joint Venture</span><span class="popup-detail-value">OpenAI + Oracle + SoftBank (Stargate LLC)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Builder</span><span class="popup-detail-value">Crusoe Energy</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Total Project Investment</span><span class="popup-detail-value">$500 billion</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Power Capacity</span><span class="popup-detail-value danger">1.2 GW (enough for 1M homes)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">GPU Count</span><span class="popup-detail-value">450,000+ NVIDIA GB200 GPUs</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Campus Buildings</span><span class="popup-detail-value">8 planned (2 operational since Sep 2025)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Remaining Buildings</span><span class="popup-detail-value">6 more by mid-2026</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Network</span><span class="popup-detail-value">Single integrated fabric — hundreds of thousands of GPUs</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Infrastructure</span><span class="popup-detail-value">Oracle Cloud Infrastructure (OCI)</span></div>
+    <div class="popup-section-title">ADDITIONAL SITES</div>
+    <div class="popup-text">OpenAI/Oracle expanding Stargate with 5 new sites across the US including New Mexico and Ohio. This is the world's largest AI compute facility.</div>`,
+};
+
+// Extended strait intel
+const straitIntel = {
+  "Strait of Hormuz": `<div class="popup-section-title">CRISIS DETAILS — MARCH 2026</div>
+    <div class="popup-detail"><span class="popup-detail-label">Crisis Start</span><span class="popup-detail-value danger">Feb 28, 2026 (Iran war)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Pre-War Traffic</span><span class="popup-detail-value">100+ ships/day</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Post-War Traffic</span><span class="popup-detail-value danger">21 tankers total since Feb 28</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Traffic Drop</span><span class="popup-detail-value danger">~70% reduction</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Ships Anchored</span><span class="popup-detail-value danger">150+ waiting outside strait</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Attacks on Ships</span><span class="popup-detail-value danger">21 confirmed (as of Mar 12)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Tankers Targeted</span><span class="popup-detail-value danger">15+ since Feb 28</span></div>
+    <div class="popup-section-title">OIL FLOW DATA (PRE-WAR)</div>
+    <div class="popup-detail"><span class="popup-detail-label">Daily Oil Flow</span><span class="popup-detail-value">20.9 million bbl/day</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Share of Global Oil</span><span class="popup-detail-value">~20% of global consumption</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Share of Seaborne Oil</span><span class="popup-detail-value">~25% of seaborne oil trade</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">LNG Trade</span><span class="popup-detail-value">~20% of global LNG</span></div>
+    <div class="popup-section-title">IRAN BLOCKADE POLICY</div>
+    <div class="popup-detail"><span class="popup-detail-label">IRGC Announcement (Mar 5)</span><span class="popup-detail-value danger">Closed to US, Israel & Western allies</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Iran Oil Exports</span><span class="popup-detail-value warning">Continue to China (COSCO tankers)</span></div>
+    <div class="popup-section-title">ECONOMIC FALLOUT</div>
+    <div class="popup-detail"><span class="popup-detail-label">Brent Crude</span><span class="popup-detail-value danger">$112+ (highest since 2022)</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Gulf Production Lost</span><span class="popup-detail-value danger">10M+ bbl/day by Mar 12</span></div>
+    <div class="popup-detail"><span class="popup-detail-label">Largest Disruption</span><span class="popup-detail-value danger">In history of global oil market</span></div>
+    <div class="popup-section-title">ALTERNATIVE ROUTES</div>
+    <div class="popup-text">Saudi Arabia diverting oil via East-West Pipeline to Yanbu (Red Sea). UAE using Abu Dhabi Pipeline to Fujairah. Massive increase in Cape of Good Hope traffic (+3M bbl/day vs 2022).</div>`,
+};
+
+// Popup helper function
+function makePopup(content, maxWidth) {
+  return L.popup({ maxWidth: maxWidth || 380, maxHeight: 500, className: 'intel-popup' }).setContent(content);
+}
+
+// Conflicts
+conflicts.forEach(c => {
+  const marker = L.marker([c.lat, c.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-conflict"></div>', iconSize: [26, 26], iconAnchor: [13, 13] })
+  });
+  const extra = conflictIntel[c.name] || '';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:380px">
+      <div class="popup-header conflict">ACTIVE CONFLICT ZONE — CLASSIFIED INTEL</div>
+      <div class="popup-title">${c.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Intensity</span><span class="popup-detail-value danger">${c.status}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Belligerents</span><span class="popup-detail-value">${c.parties}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Active Since</span><span class="popup-detail-value">${c.since}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${c.lat.toFixed(2)}°N, ${c.lng.toFixed(2)}°E</span></div>
+      ${extra || `<div class="popup-detail"><span class="popup-detail-label">Est. Casualties</span><span class="popup-detail-value danger">${c.casualties}</span></div><div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5">${c.description}</div>`}
+    </div>
+  `, { maxWidth: 420, maxHeight: 500 });
+  marker.addTo(layerGroups.conflicts);
+
+  L.circle([c.lat, c.lng], {
+    radius: c.status === 'High Intensity' ? 200000 : c.status === 'Medium Intensity' ? 120000 : 80000,
+    color: 'rgba(220, 38, 38, 0.35)',
+    fillColor: 'rgba(220, 38, 38, 0.08)',
+    fillOpacity: 1,
+    weight: 2,
+    dashArray: '8, 4'
+  }).addTo(layerGroups.conflicts);
+});
+
+// Attacks
+attacks.forEach(a => {
+  const marker = L.marker([a.lat, a.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-attack"></div>', iconSize: [30, 30], iconAnchor: [15, 15] })
+  });
+  const contextMap = {
+    "US/Israel": "Part of 2026 Iran War — US/Israeli joint military operation targeting Iranian military & nuclear infrastructure",
+    "Iran IRGC": "Iranian retaliation against Israeli/US targets. IRGC ballistic missile units operating from dispersed launch sites",
+    "US": "US CENTCOM-directed strike as part of Iran campaign. Cruise missiles and stealth aircraft deployed from Gulf bases & carriers",
+    "Iran": "IRGC retaliatory strikes targeting coalition allies, energy infrastructure, and US military assets across Gulf region",
+    "Houthis": "Ansar Allah (Houthi) forces — part of Iran's 'Axis of Resistance'. Attacking Red Sea shipping since Nov 2023. Escalated since Feb 28 Iran war",
+    "Israel": "IDF operation — part of broader multi-front conflict including Gaza, Lebanon, and Iran",
+    "Russia": "Russian VKS (Aerospace Forces) — continued aerial bombardment of Ukrainian cities and infrastructure",
+    "Ukraine": "Ukrainian Armed Forces counter-offensive strikes using Western-supplied weapons (Storm Shadow, HIMARS, drones)",
+    "RSF": "Rapid Support Forces — paramilitary group in Sudan civil war, led by Hemedti. Accused of ethnic cleansing in Darfur",
+    "Tatmadaw": "Myanmar military junta — using airstrikes against civilian areas. 135+ paramotor attacks since Dec 2024",
+    "Hezbollah": "Lebanese Hezbollah — Iran-backed militia. Rocket/missile attacks on northern Israel escalated after Feb 28",
+    "Iran-backed PMF": "Popular Mobilization Forces — Iraqi Shia militia umbrella aligned with Iran. Attacking US bases since Oct 2023",
+    "Al-Shabaab": "Al-Qaeda affiliate in Somalia. Conducting IED attacks, assassinations, and territorial control in south/central Somalia",
+  };
+  const context = contextMap[a.by] || '';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:380px">
+      <div class="popup-header attack">ACTIVE STRIKE / ATTACK</div>
+      <div class="popup-title">${a.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Attack Type</span><span class="popup-detail-value danger">${a.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Conducted By</span><span class="popup-detail-value">${a.by}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Reported</span><span class="popup-detail-value warning">${a.time}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${a.lat.toFixed(2)}°N, ${a.lng.toFixed(2)}°E</span></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border-light);padding-top:8px">${context}</div>
+    </div>
+  `, { maxWidth: 400, maxHeight: 400 });
+  marker.addTo(layerGroups.attacks);
+});
+
+// Bases
+militaryBases.forEach(b => {
+  const marker = L.marker([b.lat, b.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: `<div class="marker-base ${b.cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
+  });
+  const extra = baseIntel[b.name] || '';
+  const flagLabel = {US:'United States',RU:'Russian Federation',CN:'People\'s Republic of China',NATO:'NATO Alliance'}[b.country] || b.country;
+  const branchIcon = {us:'🇺🇸',ru:'🇷🇺',cn:'🇨🇳',nato:'NATO'}[b.cls] || '';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:380px">
+      <div class="popup-header base">MILITARY INSTALLATION — ${flagLabel}</div>
+      <div class="popup-title">${b.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Nation</span><span class="popup-detail-value">${flagLabel}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Branch / Type</span><span class="popup-detail-value">${b.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Personnel</span><span class="popup-detail-value">${b.personnel}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${b.lat.toFixed(2)}°N, ${b.lng.toFixed(2)}°E</span></div>
+      ${extra}
+    </div>
+  `, { maxWidth: 420, maxHeight: 500 });
+  marker.addTo(layerGroups.bases);
+});
+
+// Tankers
+oilTankers.forEach(t => {
+  const isDark = t.name.includes('Shadow') || t.name.includes('Dark');
+  const isStranded = t.speed === '0 kn' || t.speed === 'Anchored';
+  const color = isDark ? '#dc2626' : isStranded ? '#d97706' : '#0891b2';
+  const marker = L.marker([t.lat, t.lng], {
+    icon: L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-tanker" style="background:${color};border-color:white"></div>`,
+      iconSize: [22, 10], iconAnchor: [11, 5]
+    })
+  });
+  const vesselType = t.name.includes('VLCC') ? 'VLCC (Very Large Crude Carrier)' : t.name.includes('Suezmax') ? 'Suezmax Tanker' : t.name.includes('Aframax') ? 'Aframax Tanker' : t.name.includes('LNG') ? 'LNG Carrier' : 'Oil Tanker';
+  const cargoValue = t.dwt ? `~${(parseInt(t.dwt.replace(/,/g,'')) * 0.85 / 1000).toFixed(0)}K barrels capacity` : '';
+  const riskLevel = isDark ? 'CRITICAL — Sanctions violation' : isStranded ? 'HIGH — Stranded/Blocked' : 'NORMAL';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:380px">
+      <div class="popup-header tanker">VESSEL INTELLIGENCE — AIS TRACKING</div>
+      <div class="popup-title">${t.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Vessel Class</span><span class="popup-detail-value">${vesselType}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Flag State</span><span class="popup-detail-value ${isDark ? 'danger' : ''}">${t.flag}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">DWT (Deadweight)</span><span class="popup-detail-value">${t.dwt} tonnes</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Cargo Capacity</span><span class="popup-detail-value">${cargoValue}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Current Cargo</span><span class="popup-detail-value ${isDark ? 'danger' : ''}">${t.cargo}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Destination</span><span class="popup-detail-value ${isStranded ? 'warning' : ''}">${t.dest}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Speed</span><span class="popup-detail-value ${isStranded ? 'danger' : ''}">${t.speed}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Position</span><span class="popup-detail-value">${t.lat.toFixed(2)}°N, ${t.lng.toFixed(2)}°E</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Risk Level</span><span class="popup-detail-value ${isDark ? 'danger' : isStranded ? 'warning' : 'safe'}">${riskLevel}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">AIS Status</span><span class="popup-detail-value ${isDark ? 'danger' : 'safe'}">${isDark ? 'DISABLED / DARK' : 'Broadcasting'}</span></div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.5">
+        <strong>Intel Note:</strong> ${t.note}
+        ${isStranded ? '<br><br><strong>Context:</strong> Vessel stranded due to Strait of Hormuz blockade (Iran war since Feb 28, 2026). Pre-war: 100+ ships transited daily. Now only 21 tankers since conflict began.' : ''}
+        ${isDark ? '<br><br><strong>Context:</strong> Shadow fleet vessel suspected of evading sanctions on Russian oil exports. STS (ship-to-ship) transfers used to obscure origin of sanctioned crude. Dark AIS indicates deliberate evasion of tracking.' : ''}
+      </div>
+    </div>
+  `, { maxWidth: 420, maxHeight: 500 });
+  marker.addTo(layerGroups.tankers);
+});
+
+// Energy
+energyFacilities.forEach(e => {
+  const isDamaged = e.status.includes('DAMAGED') || e.status.includes('DESTROYED');
+  const marker = L.marker([e.lat, e.lng], {
+    icon: L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-energy" style="${isDamaged ? 'background:#dc2626;' : ''}"></div>`,
+      iconSize: [16, 16], iconAnchor: [8, 8]
+    })
+  });
+  const extra = energyIntel[e.name] || '';
+  const oilPrice = e.type.includes('Oil') || e.type.includes('Refinery') || e.type.includes('Processing') || e.type.includes('Terminal') || e.type.includes('Storage') || e.type.includes('Strategic');
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:400px">
+      <div class="popup-header energy">ENERGY INFRASTRUCTURE — INTEL BRIEF</div>
+      <div class="popup-title">${e.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Country</span><span class="popup-detail-value">${e.country}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Facility Type</span><span class="popup-detail-value">${e.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Production/Capacity</span><span class="popup-detail-value">${e.capacity}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Reserves</span><span class="popup-detail-value">${e.reserves}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${e.lat.toFixed(2)}°N, ${e.lng.toFixed(2)}°E</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Operational Status</span><span class="popup-detail-value ${isDamaged ? 'danger' : e.status === 'Operational' ? 'safe' : 'warning'}">${e.status}</span></div>
+      ${extra}
+      ${!extra && e.status.includes('IEA') ? '<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border-light);padding-top:8px"><strong>Context:</strong> IEA coordinated release of 400M barrels from member state Strategic Petroleum Reserves on Mar 13, 2026 to stabilize oil markets following Hormuz blockade. US SPR holds ~415M barrels across 4 Gulf Coast salt cavern sites (authorized capacity: 714M barrels). SPR can release up to 4.4M bbl/day.</div>' : ''}
+      ${!extra && e.status.includes('Alert') ? '<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border-light);padding-top:8px"><strong>Threat Assessment:</strong> Facility within range of Iranian ballistic missiles (Shahab-3, Emad, Sejjil). Iran demonstrated strike capability in Sep 2019 Abqaiq/Khurais drone attacks. Saudi Arabia has Patriot/THAAD air defense coverage. Aramco activating maximum security protocols.</div>' : ''}
+    </div>
+  `, { maxWidth: 440, maxHeight: 500 });
+  marker.addTo(layerGroups.energy);
+});
+
+// Data Centers
+dataCenters.forEach(d => {
+  const marker = L.marker([d.lat, d.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-datacenter"></div>', iconSize: [14, 14], iconAnchor: [7, 7] })
+  });
+  const extra = dcIntel[d.name] || '';
+  const mwNum = parseFloat(d.capacity);
+  const homesEquiv = mwNum ? `~${Math.round(mwNum * 800).toLocaleString()} homes equivalent` : '';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:380px">
+      <div class="popup-header datacenter">DATA CENTER — CRITICAL INFRASTRUCTURE</div>
+      <div class="popup-title">${d.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Operator</span><span class="popup-detail-value">${d.operator}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Power Capacity</span><span class="popup-detail-value">${d.capacity}</span></div>
+      ${homesEquiv ? `<div class="popup-detail"><span class="popup-detail-label">Power Equivalent</span><span class="popup-detail-value">${homesEquiv}</span></div>` : ''}
+      <div class="popup-detail"><span class="popup-detail-label">Classification</span><span class="popup-detail-value">${d.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Location</span><span class="popup-detail-value">${d.region}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${d.lat.toFixed(2)}°N, ${d.lng.toFixed(2)}°E</span></div>
+      ${extra}
+      ${!extra ? '<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border-light);padding-top:8px"><strong>Global Context:</strong> 11,038 data centers globally across 174 countries (2026). Hyperscale count expected to reach 3,207 by year-end. Top 3 operators (AWS, Azure, Google) control ~60% of hyperscale capacity. Industry CAPEX projected to exceed $600B in 2026, driven by AI demand.</div>' : ''}
+    </div>
+  `, { maxWidth: 420, maxHeight: 500 });
+  marker.addTo(layerGroups.datacenters);
+});
+
+// Straits
+straits.forEach(s => {
+  const isBlocked = s.status.includes('BLOCKED') || s.status.includes('HIGH RISK') || s.status.includes('SURGING');
+  const statusClass = isBlocked ? 'danger' : s.status.includes('Reduced') || s.status.includes('Restricted') || s.status.includes('Drought') || s.status.includes('Elevated') ? 'warning' : 'safe';
+  const marker = L.marker([s.lat, s.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-strait"></div>', iconSize: [30, 10], iconAnchor: [15, 5] })
+  });
+  const extra = straitIntel[s.name] || '';
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:400px">
+      <div class="popup-header strait">STRATEGIC MARITIME CHOKEPOINT</div>
+      <div class="popup-title">${s.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Daily Oil Flow</span><span class="popup-detail-value">${s.daily_flow}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Global Trade Share</span><span class="popup-detail-value">${s.share}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Minimum Width</span><span class="popup-detail-value">${s.width}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Controlled By</span><span class="popup-detail-value">${s.controlled}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${s.lat.toFixed(2)}°N, ${s.lng.toFixed(2)}°E</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Current Status</span><span class="popup-detail-value ${statusClass}">${s.status}</span></div>
+      ${extra || `<div style="margin-top:8px;font-size:11px;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border-light);padding-top:8px"><strong>Intel:</strong> ${s.note}<br><br><strong>Global Context:</strong> ~70% of global oil demand (100M+ bbl/day) is transported through strategic maritime chokepoints. Any disruption at key straits has cascading effects on global energy prices and supply chains.</div>`}
+    </div>
+  `, { maxWidth: 440, maxHeight: 500 });
+  marker.addTo(layerGroups.straits);
+
+  L.circle([s.lat, s.lng], {
+    radius: isBlocked ? 100000 : 70000,
+    color: isBlocked ? 'rgba(220,38,38,0.4)' : 'rgba(219,39,119,0.3)',
+    fillColor: isBlocked ? 'rgba(220,38,38,0.08)' : 'rgba(219,39,119,0.06)',
+    fillOpacity: 1,
+    weight: 2,
+    dashArray: '6, 4'
+  }).addTo(layerGroups.straits);
+});
+
+// === LAYER TOGGLES ===
+document.querySelectorAll('.layer-toggle').forEach(toggle => {
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const layer = toggle.dataset.layer;
+    toggle.classList.toggle('on');
+    toggle.closest('.layer-control').classList.toggle('active');
+    if (toggle.classList.contains('on')) {
+      layerGroups[layer].addTo(map);
+    } else {
+      map.removeLayer(layerGroups[layer]);
+    }
+  });
+});
+
+// === CONFLICT SIDEBAR ===
+const conflictListEl = document.getElementById('conflict-list');
+conflicts.forEach(c => {
+  const level = c.status === 'High Intensity' ? 'high' : c.status === 'Medium Intensity' ? 'medium' : 'low';
+  const div = document.createElement('div');
+  div.className = 'conflict-sidebar-item';
+  div.innerHTML = `
+    <div class="conflict-dot ${level}"></div>
+    <div class="conflict-info">
+      <div class="conflict-name">${c.name}</div>
+      <div class="conflict-status">${c.status} — Since ${c.since}</div>
+    </div>
+  `;
+  div.addEventListener('click', () => map.flyTo([c.lat, c.lng], 6, { duration: 1.5 }));
+  conflictListEl.appendChild(div);
+});
+
+// === THREAT FEED (Real events March 2026) ===
+const threatFeed = document.getElementById('threat-feed');
+const threats = [
+  { severity: "critical", title: "Trump threatens Iran's power plants — 48hr ultimatum on Hormuz", desc: "Trump posted on social media: will 'hit and obliterate' Iran's power plants if Hormuz not reopened within 48 hours. Saturday evening.", time: "2h ago", tags: ["IRAN WAR", "HORMUZ", "ULTIMATUM"] },
+  { severity: "critical", title: "Iranian missiles target Dimona, Israel — near nuclear facility", desc: "Iran fired missiles at Israeli city of Dimona, near nuclear research facility. Labeled response to Natanz strike.", time: "4h ago", tags: ["IRAN", "ISRAEL", "NUCLEAR", "MISSILES"] },
+  { severity: "critical", title: "Israel strikes Natanz nuclear facility", desc: "Israeli air operation destroyed Iran's primary uranium enrichment facility at Natanz. US provided intelligence support.", time: "6h ago", tags: ["ISRAEL", "IRAN", "NUCLEAR", "AIRSTRIKE"] },
+  { severity: "critical", title: "Iran attacks UAE gas field — Fujairah fuel storage ablaze", desc: "Iranian cruise missiles struck UAE energy infrastructure. Gas field set ablaze. Fuel storage tank at Duqm port also damaged by drones.", time: "Mar 17", tags: ["IRAN", "UAE", "ENERGY", "STRIKE"] },
+  { severity: "critical", title: "Strait of Hormuz — only 21 tankers since war began", desc: "Traffic reduced to trickle. Pre-war: 100+ ships daily. Iran blocking US/Israel/Western allied vessels. Brent crude at $112.", time: "Ongoing", tags: ["HORMUZ", "OIL", "SHIPPING", "CRISIS"] },
+  { severity: "critical", title: "IEA releases 400M barrels from strategic reserves", desc: "International Energy Agency coordinated release of 400M barrels from member state SPRs to stabilize oil markets. Prices remain elevated.", time: "Mar 13", tags: ["IEA", "SPR", "OIL", "MARKETS"] },
+  { severity: "high", title: "Houthi anti-ship missile — Red Sea commercial vessel targeted", desc: "Houthis continue attacking shipping near Bab el-Mandeb. Part of Iran axis retaliation. Multiple vessels rerouting via Cape of Good Hope.", time: "8h ago", tags: ["HOUTHIS", "RED SEA", "MARITIME"] },
+  { severity: "high", title: "Russian KAB glide bomb strikes Kharkiv residential area", desc: "Multiple KAB guided bombs hit Kharkiv. Civilian casualties reported. Ukraine-Russia frontline static but intense exchange continues.", time: "12h ago", tags: ["UKRAINE", "RUSSIA", "AIRSTRIKE"] },
+  { severity: "high", title: "Shadow fleet tanker — AIS transponder disabled near Greece", desc: "VLCC under Cameroon flag disabled AIS tracking. Suspected ship-to-ship transfer of sanctioned Russian crude oil in Mediterranean.", time: "18h ago", tags: ["SANCTIONS", "SHADOW FLEET", "OIL"] },
+  { severity: "high", title: "RSF artillery pounds Khartoum — MSF facility damaged", desc: "Rapid Support Forces artillery strikes in multiple Khartoum districts. Médecins Sans Frontières facility hit. Civilian casualties.", time: "Mar 21", tags: ["SUDAN", "CIVILIAN", "ARTILLERY"] },
+  { severity: "high", title: "PLA Navy Shandong carrier group — live-fire exercises near Taiwan", desc: "Chinese carrier group conducting exercises 80nm SW of Taiwan. ROCAF on elevated alert. TSMC semiconductor supply chain at risk.", time: "Mar 20", tags: ["TAIWAN", "PLA NAVY", "SCS"] },
+  { severity: "medium", title: "Baltic undersea cables — anomalous signal loss detected", desc: "2 fiber optic cables near Finnish EEZ showing signal loss. Investigation underway. Possible sabotage — increased NATO surveillance.", time: "Mar 19", tags: ["INFRASTRUCTURE", "BALTIC", "SABOTAGE"] },
+  { severity: "medium", title: "PMF drone attack on Ain al-Asad Air Base, Iraq", desc: "Iran-backed Popular Mobilization Forces launched UAV at US base. Intercepted by C-RAM. Escalation since Iran war began.", time: "Mar 21", tags: ["IRAQ", "PMF", "US BASE"] },
+  { severity: "medium", title: "Panama Canal — drought restrictions tightened to 24 transits/day", desc: "Down from normal 36. Wait times exceeding 14 days. LNG carriers given priority. Climate-driven water shortage.", time: "Ongoing", tags: ["PANAMA", "TRADE", "CLIMATE"] },
+  { severity: "medium", title: "Myanmar junta airstrikes on Mandalay region — civilian casualties", desc: "Tatmadaw conducting airstrikes against resistance positions. Multiple civilian casualties reported. Resistance holding territory.", time: "Mar 21", tags: ["MYANMAR", "AIRSTRIKE"] },
+  { severity: "low", title: "NATO eFP battlegroup rotation — Baltics", desc: "Scheduled rotation of NATO enhanced Forward Presence battlegroups in Estonia, Latvia, Lithuania. Temporary increase in military traffic.", time: "Mar 20", tags: ["NATO", "BALTICS", "ROTATION"] },
+];
+
+threats.forEach((t, i) => {
+  const div = document.createElement('div');
+  div.className = `threat-item ${i < 3 ? 'new' : ''}`;
+  div.innerHTML = `
+    <div class="threat-header">
+      <div class="threat-severity ${t.severity}"></div>
+      <span class="threat-title">${t.title}</span>
+      <span class="threat-time">${t.time}</span>
+    </div>
+    <div class="threat-description">${t.desc}</div>
+    <div class="threat-tags">${t.tags.map(tag => `<span class="threat-tag">${tag}</span>`).join('')}</div>
+  `;
+  threatFeed.appendChild(div);
+});
+
+// Search
+document.querySelector('.search-box').addEventListener('input', function(e) {
+  const q = e.target.value.toLowerCase();
+  if (!q) return;
+  const allItems = [
+    ...conflicts.map(c => ({ ...c, _type: 'conflict' })),
+    ...militaryBases.map(b => ({ ...b, _type: 'base' })),
+    ...energyFacilities.map(ef => ({ ...ef, _type: 'energy' })),
+    ...dataCenters.map(d => ({ ...d, _type: 'dc' })),
+    ...straits.map(s => ({ ...s, _type: 'strait' })),
+    ...oilTankers.map(t => ({ ...t, _type: 'tanker' }))
+  ];
+  const match = allItems.find(item => item.name.toLowerCase().includes(q));
+  if (match) map.flyTo([match.lat, match.lng], 6, { duration: 1 });
+});
+
+// === PIPELINES ===
+pipelines.forEach(p => {
+  const line = L.polyline(p.points, {
+    color: p.status.includes('DESTROYED') || p.status.includes('Inactive') ? '#dc2626' : p.status.includes('CRITICAL') ? '#d97706' : '#92400e',
+    weight: p.status.includes('DESTROYED') || p.status.includes('Inactive') ? 2 : 3,
+    opacity: p.status.includes('Inactive') || p.status.includes('DESTROYED') ? 0.4 : 0.7,
+    dashArray: p.status.includes('DESTROYED') || p.status.includes('Inactive') ? '6,6' : null,
+  }).addTo(layerGroups.pipelines);
+
+  // Midpoint marker
+  const mid = p.points[Math.floor(p.points.length / 2)];
+  const marker = L.marker(mid, {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-pipeline-node"></div>', iconSize: [10, 10], iconAnchor: [5, 5] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:400px">
+      <div class="popup-header energy">OIL/GAS PIPELINE — INFRASTRUCTURE INTEL</div>
+      <div class="popup-title">${p.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Capacity</span><span class="popup-detail-value">${p.capacity}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Length</span><span class="popup-detail-value">${p.length}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Operator</span><span class="popup-detail-value">${p.operator}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value ${p.status.includes('DESTROYED') || p.status.includes('Inactive') ? 'danger' : p.status.includes('CRITICAL') ? 'warning' : 'safe'}">${p.status}</span></div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.5">
+        <strong>Intel:</strong> ${p.note}
+      </div>
+    </div>
+  `, { maxWidth: 420, maxHeight: 450 });
+  marker.addTo(layerGroups.pipelines);
+});
+
+// === TESLA GIGAFACTORIES ===
+teslaFactories.forEach(f => {
+  const marker = L.marker([f.lat, f.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: '<div class="marker-factory"></div>', iconSize: [16, 16], iconAnchor: [8, 8] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:400px">
+      <div class="popup-header" style="color:#059669">TESLA GIGAFACTORY — MANUFACTURING INTEL</div>
+      <div class="popup-title">${f.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Facility Type</span><span class="popup-detail-value">${f.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Production Capacity</span><span class="popup-detail-value">${f.capacity}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Site Area</span><span class="popup-detail-value">${f.area}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Products</span><span class="popup-detail-value">${f.products}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Employees</span><span class="popup-detail-value">${f.employees}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Coordinates</span><span class="popup-detail-value">${f.lat.toFixed(2)}°N, ${f.lng.toFixed(2)}°E</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value ${f.status.includes('DELAYED') ? 'warning' : 'safe'}">${f.status}</span></div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-light);font-size:11px;color:var(--text-secondary);line-height:1.5">
+        <strong>Intel:</strong> ${f.note}
+      </div>
+    </div>
+  `, { maxWidth: 420, maxHeight: 450 });
+  marker.addTo(layerGroups.factories);
+});
+
+// === AIR DEFENSE SYSTEMS ===
+airDefense.forEach(d => {
+  const color = d.cls === 'enemy' ? '#dc2626' : d.cls === 'damaged' ? '#d97706' : '#16a34a';
+  const marker = L.marker([d.lat, d.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: `<div class="marker-shield ${d.cls || ''}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:420px">
+      <div class="popup-header" style="color:${color}">AIR DEFENSE SYSTEM — ${d.operator}</div>
+      <div class="popup-title">${d.name}</div>
+      <div class="popup-section-title">SYSTEM SPECIFICATIONS</div>
+      <div class="popup-detail"><span class="popup-detail-label">System</span><span class="popup-detail-value">${d.system}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Operator</span><span class="popup-detail-value">${d.operator}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Engagement Range</span><span class="popup-detail-value">${d.range}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Interceptors</span><span class="popup-detail-value">${d.missiles}</span></div>
+      <div class="popup-section-title">RADAR / SENSOR</div>
+      <div class="popup-detail"><span class="popup-detail-label">Radar System</span><span class="popup-detail-value">${d.radar}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value ${d.cls === 'damaged' ? 'warning' : d.cls === 'enemy' ? 'danger' : 'safe'}">${d.status}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Position</span><span class="popup-detail-value">${d.lat.toFixed(2)}°N, ${d.lng.toFixed(2)}°E</span></div>
+    </div>
+  `, { maxWidth: 440, maxHeight: 450 });
+  marker.addTo(layerGroups.airdefense);
+});
+
+// === AIRCRAFT DEPLOYMENTS ===
+aircraft.forEach(a => {
+  const isEnemy = a.unit.includes('Russia') || a.unit.includes('Iran');
+  const color = isEnemy ? '#dc2626' : '#2563eb';
+  const marker = L.marker([a.lat, a.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: `<div class="marker-jet" style="color:${color}">✈</div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:440px">
+      <div class="popup-header" style="color:${color}">AIRCRAFT DEPLOYMENT — ${a.unit}</div>
+      <div class="popup-title">${a.name}</div>
+      <div class="popup-section-title">AIRCRAFT SPECIFICATIONS</div>
+      <div class="popup-detail"><span class="popup-detail-label">Type</span><span class="popup-detail-value">${a.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Quantity</span><span class="popup-detail-value">${a.qty}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Max Speed</span><span class="popup-detail-value">${a.speed}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Combat Range</span><span class="popup-detail-value">${a.range}</span></div>
+      <div class="popup-section-title">WEAPONS LOADOUT</div>
+      <div class="popup-detail"><span class="popup-detail-label">Armament</span><span class="popup-detail-value">${a.weapons}</span></div>
+      <div class="popup-section-title">INTELLIGENCE</div>
+      <div class="popup-text">${a.note}</div>
+    </div>
+  `, { maxWidth: 460, maxHeight: 500 });
+  marker.addTo(layerGroups.aircraft);
+});
+
+// === NAVAL DEPLOYMENTS ===
+naval.forEach(n => {
+  const isEnemy = n.name.includes('IRGC') || n.name.includes('Russian');
+  const color = isEnemy ? '#dc2626' : '#1e40af';
+  const marker = L.marker([n.lat, n.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: `<div class="marker-ship" style="background:${color}">⚓</div>`, iconSize: [20, 20], iconAnchor: [10, 10] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:440px">
+      <div class="popup-header" style="color:${color}">NAVAL DEPLOYMENT — ${n.type.split('(')[0].trim()}</div>
+      <div class="popup-title">${n.name}</div>
+      <div class="popup-section-title">VESSEL SPECIFICATIONS</div>
+      <div class="popup-detail"><span class="popup-detail-label">Type</span><span class="popup-detail-value">${n.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Displacement</span><span class="popup-detail-value">${n.displacement}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Air Wing</span><span class="popup-detail-value">${n.airwing}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Escorts</span><span class="popup-detail-value">${n.escorts}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Crew</span><span class="popup-detail-value">${n.crew}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value ${n.status.includes('ACTIVE') || n.status.includes('CLASSIFIED') ? 'danger' : 'safe'}">${n.status}</span></div>
+      <div class="popup-section-title">INTELLIGENCE</div>
+      <div class="popup-text">${n.note}</div>
+    </div>
+  `, { maxWidth: 460, maxHeight: 500 });
+  marker.addTo(layerGroups.naval);
+});
+
+// === SUBMARINE CABLES ===
+subCables.forEach(c => {
+  const color = c.status.includes('DAMAGED') ? '#dc2626' : c.status.includes('risk') || c.status.includes('Disrupted') ? '#f59e0b' : '#6366f1';
+  const line = L.polyline(c.points, {
+    color: color,
+    weight: 2.5,
+    opacity: 0.7,
+    dashArray: '6,4'
+  });
+  line.bindPopup(`
+    <div class="popup-content" style="max-width:400px">
+      <div class="popup-header" style="color:${color}">SUBMARINE CABLE — CRITICAL INFRASTRUCTURE</div>
+      <div class="popup-title">${c.name}</div>
+      <div class="popup-detail"><span class="popup-detail-label">Capacity</span><span class="popup-detail-value">${c.capacity}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Length</span><span class="popup-detail-value">${c.length}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Status</span><span class="popup-detail-value ${c.status.includes('DAMAGED') ? 'danger' : c.status.includes('risk') || c.status.includes('Disrupted') ? 'warning' : 'safe'}">${c.status}</span></div>
+      <div class="popup-section-title">INTELLIGENCE</div>
+      <div class="popup-text">${c.note}</div>
+    </div>
+  `, { maxWidth: 420, maxHeight: 400 });
+  line.addTo(layerGroups.cables);
+
+  // Start/end markers
+  const startPt = c.points[0];
+  L.circleMarker(startPt, { radius: 4, color: color, fillColor: color, fillOpacity: 0.8, weight: 1 }).addTo(layerGroups.cables);
+  const endPt = c.points[c.points.length - 1];
+  L.circleMarker(endPt, { radius: 4, color: color, fillColor: color, fillOpacity: 0.8, weight: 1 }).addTo(layerGroups.cables);
+});
+
+// === NUCLEAR ARSENAL SITES ===
+nukeSites.forEach(n => {
+  const colors = { USA: '#2563eb', Russia: '#dc2626', China: '#f59e0b', UK: '#2563eb', France: '#2563eb', Israel: '#2563eb', Pakistan: '#16a34a', India: '#f97316', DPRK: '#dc2626' };
+  const color = colors[n.country] || '#6b7280';
+  const marker = L.marker([n.lat, n.lng], {
+    icon: L.divIcon({ className: 'custom-marker', html: `<div class="marker-nuke" style="background:${color};box-shadow:0 0 6px ${color}40"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
+  });
+  marker.bindPopup(`
+    <div class="popup-content" style="max-width:440px">
+      <div class="popup-header" style="color:${color}">NUCLEAR ARSENAL — ${n.country}</div>
+      <div class="popup-title">${n.name}</div>
+      <div class="popup-section-title">WEAPONS SYSTEM</div>
+      <div class="popup-detail"><span class="popup-detail-label">Warheads</span><span class="popup-detail-value danger">${n.warheads}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Type</span><span class="popup-detail-value">${n.type}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Range</span><span class="popup-detail-value">${n.range}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">National Total</span><span class="popup-detail-value">${n.total}</span></div>
+      <div class="popup-detail"><span class="popup-detail-label">Position</span><span class="popup-detail-value">${n.lat.toFixed(2)}°N, ${n.lng.toFixed(2)}°E</span></div>
+      <div class="popup-section-title">INTELLIGENCE</div>
+      <div class="popup-text">${n.note}</div>
+    </div>
+  `, { maxWidth: 460, maxHeight: 500 });
+  marker.addTo(layerGroups.nukes);
+});
+
+// === SATELLITE TOGGLE ===
+function toggleSatPanel() {
+  const panel = document.getElementById('satPanel');
+  panel.classList.toggle('visible');
+}
+
+// === STRIKE REPLAY SYSTEM ===
+const strikeTimeline = [
+  { day: 0, date: "Feb 28", events: [
+    { name: "US/Israel Opening Strike — Leadership House, Tehran", from: [32.0, 47.0], to: [35.69, 51.39], missile: "B-2 Spirit / JDAM bunker busters", by: "US/Israel", detail: "Supreme Leader Khamenei killed. First wave of joint strikes. B-2 bombers from Diego Garcia + F-35s from Al Udeid. 170 killed when missile hit girls' school near Minab naval base." },
+    { name: "Strike on IRGC Malek-Ashtar HQ, Tehran", from: [36.95, -76.33], to: [35.72, 51.42], missile: "Tomahawk TLAM Block V (1,600 km range)", by: "US Navy", detail: "Launched from USS destroyer group in Arabian Sea. IRGC military HQ completely destroyed." },
+    { name: "Strike on Iranian Air Defenses", from: [25.12, 51.32], to: [32.65, 51.68], missile: "AGM-88 HARM + JSOW", by: "US (Al Udeid)", detail: "SEAD mission suppressing Iranian S-300/Bavar-373 air defense systems. F-16CJ/F-35 from Al Udeid Air Base, Qatar." },
+  ]},
+  { day: 1, date: "Mar 1", events: [
+    { name: "Iran Retaliation — Shahab-3 barrage on Israel", from: [34.0, 51.0], to: [32.0, 34.8], missile: "Shahab-3 MRBM (1,300 km range, liquid-fuel)", by: "Iran IRGC", detail: "First retaliatory wave. Shahab-3 liquid-fuel missiles from western Iran launch sites. 30-60 min fueling required. Most intercepted by Arrow-3 / David's Sling." },
+    { name: "Iran — Emad missiles at US bases Iraq", from: [33.5, 48.0], to: [33.8, 42.45], missile: "Emad (1,700 km, MaRV guided reentry)", by: "Iran IRGC", detail: "Emad precision-guided variant targeting Ain al-Asad Air Base. Maneuverable reentry vehicle (MaRV) alters trajectory in terminal phase to evade Patriot defense." },
+  ]},
+  { day: 2, date: "Mar 2", events: [
+    { name: "US Tomahawk salvo — Kharg Island Oil Terminal", from: [22.0, 60.0], to: [29.23, 50.32], missile: "Tomahawk TLAM Block V (1,600 km)", by: "USS Eisenhower CSG", detail: "Carrier Strike Group in Arabian Sea. Targeting Iran's primary oil export hub handling 90% of crude exports (5M bbl/day). Storage tanks and loading facilities destroyed." },
+    { name: "IRGC Malek-Ashtar video confirmed destroyed", from: [0,0], to: [35.72, 51.42], missile: "Assessment", by: "OSINT", detail: "Iran International releases video showing complete destruction of IRGC building." },
+  ]},
+  { day: 3, date: "Mar 3", events: [
+    { name: "Israeli strike on IRIB State Broadcaster, Tehran", from: [31.0, 34.5], to: [35.71, 51.41], missile: "LORA ballistic missile (400 km) + F-35I Adir", by: "Israel IAF", detail: "Separate Israeli air operation targeting Iranian state media infrastructure. F-35I Adir stealth fighters likely from Nevatim Air Base." },
+    { name: "Iran fires at Gulf states — Kuwait, Qatar, UAE", from: [33.0, 49.0], to: [29.4, 47.9], missile: "Fateh-313 SRBM (500 km, solid-fuel)", by: "Iran IRGC", detail: "Iran broadens targeting to coalition allies. Fateh-313 short-range ballistic missiles — solid fuel, rapid launch capability. Targeting oil infrastructure and airports." },
+  ]},
+  { day: 4, date: "Mar 4", events: [
+    { name: "IRGC closes Strait of Hormuz to Western ships", from: [27.0, 56.5], to: [26.56, 56.25], missile: "IRGC Navy — fast attack craft + mines", by: "Iran IRGC Navy", detail: "IRGC deploys fast attack craft, lays mines. Announces Hormuz closed to US/Israel/Western allied vessels. Traffic drops 70%. 150+ ships anchor outside strait." },
+  ]},
+  { day: 5, date: "Mar 5", events: [
+    { name: "Iran Sejjil launch at Israeli military targets", from: [35.0, 53.0], to: [32.0, 34.8], missile: "Sejjil MRBM (2,000-2,500 km, solid-fuel, Mach 14)", by: "Iran IRGC", detail: "Iran's most advanced missile. Two-stage solid-fuel — no fueling delay, launch within minutes. Speed >17,000 km/h (Mach 14). Targeting Israeli air command centers and defense industry." },
+    { name: "Iran attacks merchant ships near Hormuz", from: [27.1, 56.8], to: [26.3, 56.4], missile: "C-802 anti-ship missile (120 km range)", by: "IRGC Navy", detail: "First confirmed attacks on commercial shipping. C-802 radar-guided anti-ship cruise missiles. Iranian version of Chinese YJ-82." },
+  ]},
+  { day: 7, date: "Mar 7", events: [
+    { name: "US B-2 strikes on Iranian missile launch sites", from: [-7.32, 72.42], to: [34.5, 50.5], missile: "GBU-57 MOP (Massive Ordnance Penetrator, 14,000 kg)", by: "US (Diego Garcia)", detail: "B-2 Spirit stealth bombers from Diego Garcia. GBU-57 bunker busters — 14 tonnes, designed to penetrate 60m of reinforced concrete. Targeting underground missile storage." },
+    { name: "Houthi re-enters conflict — threatens Red Sea", from: [15.0, 43.5], to: [13.5, 42.8], missile: "Toufan missile (1,800 km) + Samad-3 drone", by: "Houthis (Ansar Allah)", detail: "Houthis announce resumption of Red Sea attacks in solidarity with Iran. Launch from Hodeida/Hajjah governorates on Yemen's coast." },
+  ]},
+  { day: 10, date: "Mar 10", events: [
+    { name: "Gulf oil production down 10M+ bbl/day", from: [0,0], to: [25.0, 50.0], missile: "Economic warfare", by: "Assessment", detail: "Kuwait, Iraq, Saudi Arabia, UAE collective production drop of 10M+ bbl/day. Largest supply disruption in history of global oil market." },
+  ]},
+  { day: 13, date: "Mar 13", events: [
+    { name: "IEA releases 400M barrels from strategic reserves", from: [48.8, 2.3], to: [29.05, -95.65], missile: "Economic response", by: "IEA (28 member states)", detail: "Coordinated emergency release from US SPR (Bryan Mound, Big Hill, West Hackberry, Bayou Choctaw), Japan, Germany, France, UK, South Korea reserves. Brent remains above $110." },
+  ]},
+  { day: 14, date: "Mar 14", events: [
+    { name: "Russia massive strike on Ukraine (same day)", from: [44.6, 33.5], to: [49.99, 36.23], missile: "Zircon (Mach 8 hypersonic), Iskander-M, Kalibr, Kh-101", by: "Russia VKS", detail: "2 Zircon anti-ship missiles from Crimea, 13 Iskander-M from Bryansk, 25 Kalibr from Black/Caspian Sea ships, 24 Kh-101 from Tu-95MS bombers (Vologda). 430 Shahed drones. Targeting Ukrainian energy grid." },
+    { name: "Ukraine drone strike on Belgorod", from: [48.5, 37.5], to: [50.6, 36.6], missile: "UJ-22 Airborne + FPV drones", by: "Ukraine", detail: "Ukrainian long-range drone strike on Russian territory. FPV and fixed-wing drones targeting military logistics." },
+  ]},
+  { day: 17, date: "Mar 17", events: [
+    { name: "Iran strikes UAE Fujairah gas field", from: [28.0, 53.0], to: [25.13, 56.33], missile: "Soumar cruise missile (2,000 km range)", by: "Iran IRGC", detail: "Iranian Soumar-family cruise missile — based on Kh-55 design. Gas field set ablaze, fuel storage at Duqm damaged. Targeting energy infrastructure of coalition partners." },
+  ]},
+  { day: 18, date: "Mar 18", events: [
+    { name: "Israel strikes Tehran IRGC HQ", from: [31.0, 34.5], to: [35.69, 51.39], missile: "Jericho III IRBM (4,800 km) + F-35I", by: "Israel", detail: "Israeli strike using combination of Jericho III intermediate-range ballistic missile and F-35I stealth fighter-bombers. Jericho III is Israel's longest-range missile — nuclear capable." },
+    { name: "Hengaw: 5,300+ Iranian military killed", from: [0,0], to: [32.4, 53.7], missile: "Assessment", by: "Hengaw Human Rights", detail: "Kurdish human rights org estimates 5,300+ Iranian military killed in strikes so far. Health Ministry reports 1,500+ total deaths." },
+  ]},
+  { day: 20, date: "Mar 20", events: [
+    { name: "Iranian drones hit Duqm & Salalah (Oman)", from: [27.5, 57.0], to: [19.67, 57.70], missile: "Shahed-136 kamikaze drone (2,000 km range)", by: "Iran", detail: "Shahed-136 delta-wing loitering munitions. Same type Russia uses in Ukraine (renamed Geran-2). Cheap ($20K each), GPS+inertial guidance. Fuel storage damaged at Duqm port." },
+    { name: "Houthi drone at Salalah, Oman", from: [15.5, 44.0], to: [17.02, 54.09], missile: "Samad-3 UAV (1,500 km)", by: "Houthis", detail: "Houthi Samad-3 long-range kamikaze drone. Iranian-designed Samad series. Launched from Houthi-held Hajjah/Hodeida governorates." },
+  ]},
+  { day: 21, date: "Mar 21", events: [
+    { name: "Israel strikes Natanz nuclear facility", from: [31.0, 34.5], to: [33.72, 51.73], missile: "GBU-28 bunker busters + Jericho III", by: "Israel/US", detail: "Combined US-Israel strike on Iran's primary uranium enrichment facility. CIA says severe damage — years to rebuild. But Iran moved much enriched uranium stockpile before strikes." },
+    { name: "Iran fires at Dimona (near Israeli nuclear site)", from: [34.0, 51.0], to: [31.0, 35.2], missile: "Kheibar Shekan (1,450 km, solid-fuel, MaRV)", by: "Iran IRGC", detail: "Targeting Israeli city of Dimona — near Negev Nuclear Research Center. Kheibar Shekan: newest solid-fuel missile with maneuverable warhead. Iranian state TV calls it 'response to Natanz'." },
+  ]},
+  { day: 22, date: "Mar 22", events: [
+    { name: "Trump 48h ultimatum — threatens Iran power plants", from: [38.9, -77.0], to: [32.4, 53.7], missile: "Political — threat of expanded targeting", by: "US President", detail: "Trump social media post: will 'hit and obliterate' Iran's power plants beginning with largest, if Hormuz not reopened within 48 hours. Marks potential major escalation to civilian infrastructure." },
+    { name: "Russian KAB glide bomb on Kharkiv", from: [51.0, 37.0], to: [49.99, 36.23], missile: "KAB-500/1500 guided glide bomb (UMPK kit, 70km range)", by: "Russia VKS", detail: "KAB (Korrektiruyemaya Aviabomba) — Soviet-era bombs fitted with UMPK glide kit + satellite guidance. Dropped from Su-34 bombers outside Ukrainian air defense range. 500kg-1500kg warheads." },
+    { name: "RSF artillery — Khartoum districts", from: [15.8, 32.3], to: [15.6, 32.55], missile: "D-30 122mm howitzer + BM-21 Grad MLRS", by: "RSF (Sudan)", detail: "Rapid Support Forces using Soviet-era D-30 howitzers and BM-21 Grad multiple rocket launchers (40 x 122mm rockets, 20km range). MSF facility damaged. Indiscriminate shelling." },
+    { name: "Hezbollah rockets at Haifa", from: [33.5, 35.8], to: [32.8, 35.0], missile: "Fadi-2 heavy rockets + Burkan SRBM", by: "Hezbollah", detail: "Hezbollah's Fadi-2 rockets (200 km range) and Burkan short-range ballistic missiles. Iranian-supplied Fateh-110 derivatives. Launched from southern Lebanon. Escalated since Iran war." },
+  ]},
+];
+
+const trajectoryLayer = L.layerGroup().addTo(map);
+let timelineInterval = null;
+let currentDay = 0;
+
+function toggleTimeline() {
+  document.getElementById('timelinePanel').classList.toggle('visible');
+}
+
+function drawTrajectories(dayIndex) {
+  trajectoryLayer.clearLayers();
+  const dayData = strikeTimeline.find(d => d.day === dayIndex);
+  if (!dayData) return;
+
+  document.getElementById('timelineDate').textContent = dayData.date;
+  let infoHtml = '';
+
+  dayData.events.forEach(ev => {
+    if (ev.from[0] === 0 && ev.from[1] === 0) {
+      // Assessment event — no trajectory
+      infoHtml += `<div style="margin-bottom:6px"><strong>${ev.name}</strong><br>${ev.detail}</div>`;
+      return;
+    }
+
+    // Draw trajectory line
+    const line = L.polyline([ev.from, ev.to], {
+      color: ev.by.includes('Iran') || ev.by.includes('Houthi') || ev.by.includes('Hezbollah') || ev.by.includes('Russia') || ev.by.includes('RSF') ? '#dc2626' : '#2563eb',
+      weight: 2.5,
+      opacity: 0.8,
+      dashArray: '8,6',
+      className: 'missile-trajectory'
+    }).addTo(trajectoryLayer);
+
+    // Launch site marker
+    L.circleMarker(ev.from, {
+      radius: 6,
+      color: '#fff',
+      fillColor: ev.by.includes('Iran') || ev.by.includes('Houthi') || ev.by.includes('Hezbollah') || ev.by.includes('Russia') || ev.by.includes('RSF') ? '#dc2626' : '#2563eb',
+      fillOpacity: 1,
+      weight: 2
+    }).bindPopup(`
+      <div class="popup-content" style="max-width:400px">
+        <div class="popup-header attack">LAUNCH SITE</div>
+        <div class="popup-title">${ev.name}</div>
+        <div class="popup-section-title">WEAPON SYSTEM</div>
+        <div class="popup-detail"><span class="popup-detail-label">Missile/Weapon</span><span class="popup-detail-value danger">${ev.missile}</span></div>
+        <div class="popup-detail"><span class="popup-detail-label">Launched By</span><span class="popup-detail-value">${ev.by}</span></div>
+        <div class="popup-detail"><span class="popup-detail-label">Date</span><span class="popup-detail-value">${dayData.date}, 2026</span></div>
+        <div class="popup-detail"><span class="popup-detail-label">Launch Position</span><span class="popup-detail-value">${ev.from[0].toFixed(2)}°N, ${ev.from[1].toFixed(2)}°E</span></div>
+        <div class="popup-detail"><span class="popup-detail-label">Target Position</span><span class="popup-detail-value">${ev.to[0].toFixed(2)}°N, ${ev.to[1].toFixed(2)}°E</span></div>
+        <div class="popup-section-title">INTELLIGENCE ASSESSMENT</div>
+        <div class="popup-text">${ev.detail}</div>
+      </div>
+    `, { maxWidth: 420, maxHeight: 450 }).addTo(trajectoryLayer);
+
+    // Impact marker
+    L.circleMarker(ev.to, {
+      radius: 8,
+      color: '#dc2626',
+      fillColor: '#fca5a5',
+      fillOpacity: 0.6,
+      weight: 2
+    }).addTo(trajectoryLayer);
+
+    // Arrow at midpoint
+    const midLat = (ev.from[0] + ev.to[0]) / 2;
+    const midLng = (ev.from[1] + ev.to[1]) / 2;
+    L.marker([midLat, midLng], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="font-size:10px;color:${ev.by.includes('Iran') || ev.by.includes('Houthi') || ev.by.includes('Hezbollah') || ev.by.includes('Russia') || ev.by.includes('RSF') ? '#dc2626' : '#2563eb'};font-family:JetBrains Mono;font-weight:700;white-space:nowrap;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;font-size:9px">${ev.missile.split('(')[0].trim()}</div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      })
+    }).addTo(trajectoryLayer);
+
+    infoHtml += `<div style="margin-bottom:6px"><strong>${ev.name}</strong> — <span style="color:var(--accent-red)">${ev.missile.split('(')[0].trim()}</span><br><span style="font-size:10px;color:var(--text-muted)">${ev.detail.substring(0, 120)}...</span></div>`;
+  });
+
+  document.getElementById('timelineInfo').innerHTML = infoHtml || 'Keine Strikes an diesem Tag.';
+}
+
+function seekTimeline(val) {
+  currentDay = parseInt(val);
+  const dayEntry = strikeTimeline.reduce((closest, d) => Math.abs(d.day - currentDay) < Math.abs(closest.day - currentDay) ? d : closest);
+  drawTrajectories(dayEntry.day);
+}
+
+function playTimeline() {
+  const btn = document.getElementById('playBtn');
+  if (timelineInterval) {
+    clearInterval(timelineInterval);
+    timelineInterval = null;
+    btn.textContent = '▶ PLAY';
+    btn.classList.remove('active');
+    return;
+  }
+  btn.textContent = '⏸ PAUSE';
+  btn.classList.add('active');
+  currentDay = 0;
+  document.getElementById('timelineSlider').value = 0;
+
+  timelineInterval = setInterval(() => {
+    if (currentDay > 22) {
+      clearInterval(timelineInterval);
+      timelineInterval = null;
+      btn.textContent = '▶ PLAY';
+      btn.classList.remove('active');
+      return;
+    }
+    document.getElementById('timelineSlider').value = currentDay;
+    const dayEntry = strikeTimeline.find(d => d.day === currentDay);
+    if (dayEntry) {
+      drawTrajectories(dayEntry.day);
+    }
+    currentDay++;
+  }, 1500);
+}
+
+function resetTimeline() {
+  if (timelineInterval) {
+    clearInterval(timelineInterval);
+    timelineInterval = null;
+  }
+  document.getElementById('playBtn').textContent = '▶ PLAY';
+  document.getElementById('playBtn').classList.remove('active');
+  currentDay = 0;
+  document.getElementById('timelineSlider').value = 0;
+  trajectoryLayer.clearLayers();
+  document.getElementById('timelineInfo').innerHTML = 'Drücke ▶ PLAY um die Angriffe seit dem 28. Februar 2026 zurückzuspulen.';
+  document.getElementById('timelineDate').textContent = 'Feb 28';
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
